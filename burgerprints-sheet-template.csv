@@ -1,0 +1,7 @@
+seller_name,signup_date,marketplaces,products,lead_source,stage,days_in_stage,orders_30d,orders_60d,dispute_rate_pct,revenue_usd,aov_usd,cac_usd,ltv_usd,roas,note
+Alpha Gifts,2026-04-03,Etsy|Shopify,Apparel|Hoodie,Facebook Ads,Đã onboard,11,0,0,0.0,,,,,,"Mới onboard, chưa chạy ads mạnh"
+Sunset POD,2026-04-05,Shopify,Apparel|Mug,Google Ads,Có đơn đầu tiên,18,4,6,0.2,1350,34,27,120,1.8,"Đang test offer"
+Mug Planet,2026-03-19,Amazon|Etsy,Drinkware|Mug,Tự tìm kiếm,Đang mở rộng,26,29,51,1.1,8450,29,19,210,2.9,"Tăng trưởng ổn định"
+Canvas House,2026-03-22,Etsy|Shopify|eBay,Wall art|Canvas|Poster,Referral,Trung thành,74,83,166,1.6,22800,47,15,360,4.2,"Top seller"
+Ocean Tee,2026-02-11,eBay,Apparel,Marketplace Organic,Nguy cơ rời bỏ,23,6,35,3.7,980,21,33,82,1.1,"Drop mạnh tuần gần đây"
+Prime Threads,2026-01-28,Shopify|Amazon,Apparel|Drinkware,Facebook Ads,Đã churn,0,0,2,4.5,0,,,,,"Dừng hoạt động"

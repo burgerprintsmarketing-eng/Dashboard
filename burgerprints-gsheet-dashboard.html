@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BurgerPrints - Shared Dashboard (Google Sheet)</title>
+    <style>
+      :root {
+        --orange-700: #c2410c;
+        --orange-600: #ea580c;
+        --orange-100: #ffedd5;
+        --gray-900: #111827;
+        --gray-700: #374151;
+        --gray-500: #6b7280;
+        --gray-300: #d1d5db;
+        --gray-200: #e5e7eb;
+        --gray-100: #f3f4f6;
+        --bg: #f9fafb;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--gray-900); font-family: Inter, system-ui, Arial, sans-serif; }
+      .container { max-width: 1280px; margin: 0 auto; padding: 20px; }
+      h1 { margin: 0; font-size: 28px; }
+      h2 { margin: 0 0 12px; font-size: 20px; }
+      .sub { margin: 6px 0 16px; color: var(--gray-500); font-size: 14px; }
+      .panel { background: #fff; border: 1px solid var(--orange-100); border-radius: 10px; padding: 14px; }
+      .section { margin-top: 16px; }
+      .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .field label { display: block; margin-bottom: 4px; font-size: 12px; color: var(--gray-500); font-weight: 700; }
+      .field input, .field select { width: 100%; padding: 8px 10px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 14px; }
+      .btn { border: 1px solid var(--orange-600); background: var(--orange-600); color: #fff; border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
+      .btn:hover { background: var(--orange-700); }
+      .btn-outline { border: 1px solid var(--gray-300); background: #fff; color: var(--gray-700); border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
+      .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+      .status { margin-top: 6px; font-size: 12px; color: var(--gray-500); }
+      .funnel-rows { display: grid; gap: 8px; }
+      .funnel-row { display: grid; grid-template-columns: 170px 1fr 110px 110px; gap: 10px; align-items: center; font-size: 14px; }
+      .track { width: 100%; height: 24px; border-radius: 8px; overflow: hidden; background: var(--gray-100); }
+      .bar { height: 100%; display: flex; align-items: center; padding-left: 8px; color: #fff; font-size: 12px; font-weight: 700; }
+      .transition { margin-top: 10px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      .chip { border: 1px solid var(--gray-200); background: #fafafa; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+      .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+      .card { background: #fff; border: 1px solid var(--gray-200); border-radius: 10px; padding: 12px; }
+      .card .title { color: var(--gray-500); font-size: 13px; font-weight: 700; }
+      .card .value { margin: 7px 0 3px; color: var(--orange-700); font-size: 27px; font-weight: 800; }
+      .card p { margin: 3px 0; font-size: 13px; color: var(--gray-700); }
+      .table-wrap { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { border: 1px solid var(--gray-200); padding: 7px 8px; text-align: center; }
+      th { background: var(--gray-100); }
+      td.left, th.left { text-align: left; }
+      td.right, th.right { text-align: right; }
+      .hm-5 { background: #ea580c; color: #fff; }
+      .hm-4 { background: #f97316; color: #fff; }
+      .hm-3 { background: #fdba74; color: #111827; }
+      .hm-2 { background: #fed7aa; color: #111827; }
+      .hm-1 { background: #e5e7eb; color: #374151; }
+      .hint { font-size: 12px; color: var(--gray-500); margin-top: 6px; }
+      @media (max-width: 1024px) {
+        .grid-4, .grid-3, .kpis, .transition { grid-template-columns: 1fr 1fr; }
+        .funnel-row { grid-template-columns: 120px 1fr 90px 90px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>BurgerPrints - Shared Dashboard (Google Sheet)</h1>
+      <p class="sub">Nhiều người cùng nhập trên Google Sheet, dashboard đồng bộ từ 1 nguồn dữ liệu chung</p>
+
+      <div class="panel">
+        <h2>Kết nối Google Sheet</h2>
+        <div class="grid-3">
+          <div class="field" style="grid-column:1 / span 2">
+            <label>Google Sheet CSV URL (Publish to web dạng .csv)</label>
+            <input id="csvUrl" type="text" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=0&single=true&output=csv" />
+          </div>
+          <div class="field">
+            <label>Chu kỳ refresh (giây)</label>
+            <input id="refreshSec" type="number" min="10" value="60" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="loadBtn" class="btn" type="button">Tải dữ liệu</button>
+          <button id="toggleAutoBtn" class="btn-outline" type="button">Bật auto-refresh</button>
+        </div>
+        <div id="status" class="status">Đang dùng dữ liệu mẫu cục bộ.</div>
+        <div class="hint">
+          Header bắt buộc: seller_name, signup_date, marketplaces, products, lead_source, stage, days_in_stage, orders_30d, orders_60d, dispute_rate_pct, revenue_usd, aov_usd, cac_usd, ltv_usd, roas, note
+        </div>
+        <div class="hint">`marketplaces` và `products` nhập nhiều giá trị bằng dấu `|` (ví dụ: Etsy|Shopify).</div>
+      </div>
+
+      <div class="panel section">
+        <h2>Bộ lọc</h2>
+        <div class="grid-4">
+          <div class="field"><label>Từ ngày</label><input id="filterStartDate" type="date" value="2026-01-01" /></div>
+          <div class="field"><label>Đến ngày</label><input id="filterEndDate" type="date" value="2026-12-31" /></div>
+          <div class="field">
+            <label>Marketplace</label>
+            <select id="filterMarketplace">
+              <option value="All">All</option><option value="Etsy">Etsy</option><option value="Amazon">Amazon</option><option value="Shopify">Shopify</option><option value="eBay">eBay</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Product category</label>
+            <select id="filterCategory">
+              <option value="All">All</option><option value="Apparel">Apparel</option><option value="Drinkware">Drinkware</option><option value="Wall art">Wall art</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel section">
+        <h2>Funnel seller theo stage</h2>
+        <div id="funnelRows" class="funnel-rows"></div>
+        <div id="transitionRows" class="transition"></div>
+      </div>
+
+      <div class="section">
+        <h2>KPI theo stage</h2>
+        <div id="kpiCards" class="kpis"></div>
+      </div>
+
+      <div class="panel section">
+        <h2>Cohort retention (12 cohort gần nhất x 6 tháng)</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="left">Cohort đăng ký</th>
+                <th class="right">Seller cohort</th>
+                <th>M0</th><th>M1</th><th>M2</th><th>M3</th><th>M4</th><th>M5</th>
+              </tr>
+            </thead>
+            <tbody id="cohortBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel section">
+        <h2>Bảng dữ liệu seller</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="left">Seller</th>
+                <th>Signup</th>
+                <th>Nền tảng</th>
+                <th>Sản phẩm</th>
+                <th>Nguồn lead</th>
+                <th>Stage</th>
+                <th>Days</th>
+                <th>Orders30d</th>
+                <th>Orders60d</th>
+                <th>Dispute%</th>
+                <th>Doanh số</th>
+                <th>AOV</th>
+                <th>CAC</th>
+                <th>LTV</th>
+                <th>ROAS</th>
+              </tr>
+            </thead>
+            <tbody id="sellerTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const STAGE_LIST = ["Lead", "Đã onboard", "Có đơn đầu tiên", "Đang mở rộng", "Trung thành", "Nguy cơ rời bỏ", "Đã churn"];
+      const STAGE_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa", "#ffedd5", "#ea580c", "#9a3412"];
+
+      const SAMPLE_ROWS = [
+        { seller_name: "Alpha Gifts", signup_date: "2026-04-03", marketplaces: "Etsy|Shopify", products: "Apparel|Hoodie", lead_source: "Facebook Ads", stage: "Đã onboard", days_in_stage: "11", orders_30d: "0", orders_60d: "0", dispute_rate_pct: "0.0", revenue_usd: "", aov_usd: "", cac_usd: "", ltv_usd: "", roas: "", note: "" },
+        { seller_name: "Sunset POD", signup_date: "2026-04-05", marketplaces: "Shopify", products: "Apparel|Mug", lead_source: "Google Ads", stage: "Có đơn đầu tiên", days_in_stage: "18", orders_30d: "4", orders_60d: "6", dispute_rate_pct: "0.2", revenue_usd: "1350", aov_usd: "34", cac_usd: "27", ltv_usd: "120", roas: "1.8", note: "" },
+        { seller_name: "Mug Planet", signup_date: "2026-03-19", marketplaces: "Amazon|Etsy", products: "Drinkware|Mug", lead_source: "Tự tìm kiếm", stage: "Đang mở rộng", days_in_stage: "26", orders_30d: "29", orders_60d: "51", dispute_rate_pct: "1.1", revenue_usd: "8450", aov_usd: "29", cac_usd: "19", ltv_usd: "210", roas: "2.9", note: "" },
+      ];
+
+      let sellers = [];
+      let autoTimer = null;
+      let autoEnabled = false;
+
+      const dom = {
+        csvUrl: document.getElementById("csvUrl"),
+        refreshSec: document.getElementById("refreshSec"),
+        loadBtn: document.getElementById("loadBtn"),
+        toggleAutoBtn: document.getElementById("toggleAutoBtn"),
+        status: document.getElementById("status"),
+        filterStartDate: document.getElementById("filterStartDate"),
+        filterEndDate: document.getElementById("filterEndDate"),
+        filterMarketplace: document.getElementById("filterMarketplace"),
+        filterCategory: document.getElementById("filterCategory"),
+        funnelRows: document.getElementById("funnelRows"),
+        transitionRows: document.getElementById("transitionRows"),
+        kpiCards: document.getElementById("kpiCards"),
+        cohortBody: document.getElementById("cohortBody"),
+        sellerTable: document.getElementById("sellerTable"),
+      };
+
+      function fmtNum(v) { return new Intl.NumberFormat("vi-VN").format(v || 0); }
+      function fmtPct(v) { return `${((v || 0) * 100).toFixed(1)}%`; }
+      function fmtMoney(v) { return v === null || v === undefined ? "-" : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v); }
+      function fmtFloat(v) { return v === null || v === undefined ? "-" : Number(v).toFixed(2); }
+      function parseDate(s) { return new Date(`${s}T00:00:00`); }
+      function monthKey(dateStr) { const d = new Date(dateStr); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
+      function parseOptionalNumber(value) {
+        if (value === "" || value === null || value === undefined) return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+      }
+
+      function parseCsvLine(line) {
+        const out = [];
+        let cur = "";
+        let inQuote = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          const next = line[i + 1];
+          if (ch === '"' && inQuote && next === '"') { cur += '"'; i++; continue; }
+          if (ch === '"') { inQuote = !inQuote; continue; }
+          if (ch === "," && !inQuote) { out.push(cur); cur = ""; continue; }
+          cur += ch;
+        }
+        out.push(cur);
+        return out.map((x) => x.trim());
+      }
+
+      function parseCsvText(text) {
+        const lines = text.replace(/\r/g, "").split("\n").filter((x) => x.trim() !== "");
+        if (!lines.length) return [];
+        const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCsvLine(lines[i]);
+          const row = {};
+          headers.forEach((h, idx) => { row[h] = cols[idx] || ""; });
+          rows.push(row);
+        }
+        return rows;
+      }
+
+      function splitMulti(v) {
+        if (!v) return [];
+        return String(v).split("|").map((x) => x.trim()).filter(Boolean);
+      }
+
+      function normalizeRows(rows) {
+        return rows.map((r, idx) => ({
+          id: idx + 1,
+          name: r.seller_name || "",
+          signupDate: r.signup_date || "",
+          marketplaces: splitMulti(r.marketplaces),
+          products: splitMulti(r.products),
+          leadSource: r.lead_source || "",
+          stage: r.stage || "Lead",
+          daysInStage: Number(r.days_in_stage || 0),
+          orders30d: Number(r.orders_30d || 0),
+          orders60d: Number(r.orders_60d || 0),
+          disputeRate: Number(r.dispute_rate_pct || 0),
+          revenue: parseOptionalNumber(r.revenue_usd),
+          aov: parseOptionalNumber(r.aov_usd),
+          cac: parseOptionalNumber(r.cac_usd),
+          ltv: parseOptionalNumber(r.ltv_usd),
+          roas: parseOptionalNumber(r.roas),
+          note: r.note || "",
+        })).filter((x) => x.name && x.signupDate);
+      }
+
+      async function loadFromCsvUrl(url) {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        return normalizeRows(parseCsvText(text));
+      }
+
+      function retentionPatternByStage(stage) {
+        if (stage === "Lead" || stage === "Đã onboard") return [1, 0, 0, 0, 0, 0];
+        if (stage === "Có đơn đầu tiên") return [1, 1, 0, 0, 0, 0];
+        if (stage === "Đang mở rộng") return [1, 1, 1, 1, 0, 0];
+        if (stage === "Trung thành") return [1, 1, 1, 1, 1, 1];
+        if (stage === "Nguy cơ rời bỏ") return [1, 1, 1, 0, 0, 0];
+        return [1, 1, 0, 0, 0, 0];
+      }
+
+      function last12Months(baseDateStr) {
+        const base = parseDate(baseDateStr);
+        const result = [];
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+          result.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+        }
+        return result;
+      }
+
+      function heatLevel(rate) {
+        if (rate >= 0.8) return "hm-5";
+        if (rate >= 0.65) return "hm-4";
+        if (rate >= 0.5) return "hm-3";
+        if (rate >= 0.35) return "hm-2";
+        return "hm-1";
+      }
+
+      function getFilteredSellers() {
+        const start = parseDate(dom.filterStartDate.value);
+        const end = parseDate(dom.filterEndDate.value);
+        const market = dom.filterMarketplace.value;
+        const cat = dom.filterCategory.value;
+        return sellers.filter((s) => {
+          const d = parseDate(s.signupDate);
+          const passDate = d >= start && d <= end;
+          const passMarket = market === "All" || s.marketplaces.includes(market);
+          const passCategory = cat === "All" || s.products.includes(cat);
+          return passDate && passMarket && passCategory;
+        });
+      }
+
+      function buildStageMetrics(filtered) {
+        const rows = STAGE_LIST.map((stage) => {
+          const group = filtered.filter((x) => x.stage === stage);
+          const total = group.length;
+          const avgDays = total ? Math.round(group.reduce((sum, x) => sum + x.daysInStage, 0) / total) : 0;
+          return { stage, total, avgDays };
+        });
+        return rows.map((r, i) => {
+          const next = rows[i + 1];
+          return { ...r, conversionToNext: next && r.total > 0 ? next.total / r.total : null };
+        });
+      }
+
+      function render() {
+        const filtered = getFilteredSellers();
+        const metrics = buildStageMetrics(filtered);
+        const max = Math.max(1, ...metrics.map((x) => x.total));
+
+        dom.funnelRows.innerHTML = metrics.map((m, i) => `
+          <div class="funnel-row">
+            <div><strong>${m.stage}</strong></div>
+            <div class="track"><div class="bar" style="width:${(m.total / max) * 100}%;background:${STAGE_COLORS[i]}">${fmtNum(m.total)}</div></div>
+            <div>${fmtNum(m.total)}</div>
+            <div>${m.conversionToNext == null ? "-" : fmtPct(m.conversionToNext)}</div>
+          </div>
+        `).join("");
+
+        dom.transitionRows.innerHTML = metrics.slice(0, -1).map((m, i) => `
+          <div class="chip"><strong>${m.stage}</strong> → <strong>${metrics[i + 1].stage}</strong> <span style="color:#c2410c;font-weight:700">${fmtPct(m.conversionToNext || 0)}</span></div>
+        `).join("");
+
+        dom.kpiCards.innerHTML = metrics.map((m) => `
+          <div class="card">
+            <div class="title">${m.stage}</div>
+            <div class="value">${fmtNum(m.total)}</div>
+            <p>Tổng seller</p>
+            <p>CR sang stage kế: <strong>${m.conversionToNext == null ? "-" : fmtPct(m.conversionToNext)}</strong></p>
+            <p>TG ở stage TB: <strong>${m.avgDays} ngày</strong></p>
+          </div>
+        `).join("");
+
+        const months = last12Months(dom.filterEndDate.value);
+        dom.cohortBody.innerHTML = months.map((mKey) => {
+          const cohort = filtered.filter((s) => monthKey(s.signupDate) === mKey);
+          const size = cohort.length;
+          const active = [0, 0, 0, 0, 0, 0];
+          cohort.forEach((s) => {
+            const pat = retentionPatternByStage(s.stage);
+            for (let i = 0; i < 6; i++) active[i] += pat[i];
+          });
+          const retention = active.map((v) => (size > 0 ? v / size : 0));
+          const cells = retention.map((r, i) => `<td class="${heatLevel(r)}"><div>${fmtNum(active[i])}</div><div>${Math.round(r * 100)}%</div></td>`).join("");
+          return `<tr><td class="left">${mKey}</td><td class="right">${fmtNum(size)}</td>${cells}</tr>`;
+        }).join("");
+
+        dom.sellerTable.innerHTML = filtered.map((s) => `
+          <tr>
+            <td class="left">${s.name}</td>
+            <td>${s.signupDate}</td>
+            <td>${s.marketplaces.join(", ")}</td>
+            <td>${s.products.join(", ")}</td>
+            <td>${s.leadSource || "-"}</td>
+            <td>${s.stage}</td>
+            <td>${fmtNum(s.daysInStage)}</td>
+            <td>${fmtNum(s.orders30d)}</td>
+            <td>${fmtNum(s.orders60d)}</td>
+            <td>${Number(s.disputeRate).toFixed(1)}</td>
+            <td>${fmtMoney(s.revenue)}</td>
+            <td>${fmtMoney(s.aov)}</td>
+            <td>${fmtMoney(s.cac)}</td>
+            <td>${fmtMoney(s.ltv)}</td>
+            <td>${fmtFloat(s.roas)}</td>
+          </tr>
+        `).join("");
+      }
+
+      async function reloadData() {
+        const url = dom.csvUrl.value.trim();
+        if (!url) {
+          sellers = normalizeRows(SAMPLE_ROWS);
+          dom.status.textContent = "Đang dùng dữ liệu mẫu cục bộ.";
+          render();
+          return;
+        }
+        try {
+          const rows = await loadFromCsvUrl(url);
+          sellers = rows;
+          dom.status.textContent = `Tải thành công ${rows.length} seller lúc ${new Date().toLocaleString("vi-VN")}`;
+          render();
+        } catch (e) {
+          dom.status.textContent = `Lỗi tải dữ liệu: ${e.message}. Kiểm tra lại URL CSV đã publish public.`;
+        }
+      }
+
+      function toggleAutoRefresh() {
+        if (autoEnabled) {
+          clearInterval(autoTimer);
+          autoEnabled = false;
+          dom.toggleAutoBtn.textContent = "Bật auto-refresh";
+          return;
+        }
+        const sec = Math.max(10, Number(dom.refreshSec.value) || 60);
+        autoTimer = setInterval(reloadData, sec * 1000);
+        autoEnabled = true;
+        dom.toggleAutoBtn.textContent = "Tắt auto-refresh";
+      }
+
+      dom.loadBtn.addEventListener("click", reloadData);
+      dom.toggleAutoBtn.addEventListener("click", toggleAutoRefresh);
+      [dom.filterStartDate, dom.filterEndDate, dom.filterMarketplace, dom.filterCategory].forEach((el) => el.addEventListener("change", render));
+
+      sellers = normalizeRows(SAMPLE_ROWS);
+      render();
+    </script>
+  </body>
+</html>
