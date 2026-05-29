@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Lifecycle Dashboard</title>
+    <style>
+      :root {
+        --orange-700: #c2410c;
+        --orange-600: #ea580c;
+        --orange-100: #ffedd5;
+        --gray-900: #111827;
+        --gray-700: #374151;
+        --gray-500: #6b7280;
+        --gray-300: #d1d5db;
+        --gray-200: #e5e7eb;
+        --gray-100: #f3f4f6;
+        --bg: #f9fafb;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--gray-900); font-family: Inter, system-ui, Arial, sans-serif; }
+      .container { max-width: 1180px; margin: 0 auto; padding: 20px; }
+      h1 { margin: 0; font-size: 28px; }
+      h2 { margin: 0 0 12px; font-size: 20px; }
+      .sub { margin: 6px 0 16px; color: var(--gray-500); font-size: 14px; }
+      .panel { background: #fff; border: 1px solid var(--orange-100); border-radius: 10px; padding: 14px; }
+      .section { margin-top: 16px; }
+      .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+      .btn { border: 1px solid var(--orange-600); background: var(--orange-600); color: #fff; border-radius: 8px; padding: 8px 12px; font-weight: 700; text-decoration: none; display: inline-block; }
+      .btn:hover { background: var(--orange-700); }
+      .card { background: #fff; border: 1px solid var(--gray-200); border-radius: 10px; padding: 12px; }
+      .card .title { color: var(--gray-500); font-size: 13px; font-weight: 700; }
+      .card .value { margin: 7px 0 3px; color: var(--orange-700); font-size: 26px; font-weight: 800; }
+      .card p { margin: 3px 0; font-size: 13px; color: var(--gray-700); }
+      .timeline { margin-top: 8px; border-left: 2px solid #fed7aa; padding-left: 12px; }
+      .timeline-item { margin-bottom: 10px; }
+      .timeline-item .t-date { font-size: 12px; color: var(--gray-500); }
+      .timeline-item .t-title { font-size: 14px; color: var(--gray-900); font-weight: 700; }
+      .timeline-item .t-sub { font-size: 12px; color: var(--gray-700); }
+      .table-wrap { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { border: 1px solid var(--gray-200); padding: 7px 8px; text-align: center; }
+      th { background: var(--gray-100); }
+      td.left, th.left { text-align: left; }
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .b-lead { background: #e5e7eb; color: #374151; }
+      .b-contacted { background: #ffedd5; color: #9a3412; }
+      .b-sql { background: #fdba74; color: #7c2d12; }
+      .b-paid { background: #ea580c; color: #fff; }
+      .b-atrisk { background: #b91c1c; color: #fff; }
+      .status { font-size: 12px; color: var(--gray-500); margin-top: 8px; }
+      @media (max-width: 980px) { .grid-4 { grid-template-columns: 1fr 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a id="backLink" class="btn" href="burgerprints-crm-lifecycle-dashboard.html">← Quay lại dashboard tổng</a>
+      <h1 id="title" style="margin-top:12px;">Customer Dashboard</h1>
+      <p class="sub" id="subtitle">Theo dõi vòng đời chi tiết của 1 khách hàng.</p>
+
+      <div class="panel">
+        <h2>Thông tin chính</h2>
+        <div id="kpiGrid" class="grid-4"></div>
+        <div id="status" class="status">Đang tải dữ liệu...</div>
+      </div>
+
+      <div class="panel section">
+        <h2>Timeline vòng đời</h2>
+        <div id="timeline" class="timeline"></div>
+      </div>
+
+      <div class="panel section">
+        <h2>Lead records của khách hàng</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Lead ID</th>
+                <th>Lead date</th>
+                <th>Last contact</th>
+                <th>Lead source</th>
+                <th>Lifecycle stage</th>
+                <th>Conversion</th>
+                <th>CAC</th>
+                <th>ROAS</th>
+                <th>LTV</th>
+              </tr>
+            </thead>
+            <tbody id="leadRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const SAMPLE_ROWS = [
+        { lead_id: "L-001", customer_id: "A36128", full_name: "Duy Dương", phone: "0356711444", lead_source: "Facebook Ads", conversion: "Paid", date_lead_created: "2025-08-05", last_contact: "2025-09-16", lead_classification: "SQL - Đang có đơn", paid_date: "2025-08-12", cac_usd: "25", roas: "3.2", ltv_usd: "240", lifecycle_stage: "Paid", customer_key: "A36128" },
+      ];
+
+      function q(name) { return new URLSearchParams(window.location.search).get(name) || ""; }
+      const customerKeyParam = q("customerKey");
+      const csvUrlParam = q("csvUrl");
+
+      const dom = {
+        backLink: document.getElementById("backLink"),
+        title: document.getElementById("title"),
+        subtitle: document.getElementById("subtitle"),
+        kpiGrid: document.getElementById("kpiGrid"),
+        timeline: document.getElementById("timeline"),
+        leadRows: document.getElementById("leadRows"),
+        status: document.getElementById("status"),
+      };
+
+      function fmtNum(v) { return new Intl.NumberFormat("vi-VN").format(v || 0); }
+      function fmtMoney(v) {
+        if (v === null || v === undefined || v === "") return "-";
+        const n = Number(v);
+        if (!Number.isFinite(n)) return "-";
+        return `$${new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n)}`;
+      }
+      function fmtFloat(v) { return v === null || v === undefined ? "-" : Number(v).toFixed(2); }
+      function toOptionalNumber(v) { if (v === null || v === undefined || String(v).trim() === "") return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
+
+      function parseDateFlexible(raw) {
+        if (!raw) return null;
+        const s = String(raw).trim();
+        if (!s) return null;
+        let m = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+        if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+        if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+        const d = new Date(s);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      function formatDate(d) {
+        if (!d) return "-";
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      function badge(stage) {
+        if (stage === "Paid") return '<span class="badge b-paid">Paid</span>';
+        if (stage === "SQL") return '<span class="badge b-sql">SQL</span>';
+        if (stage === "Contacted") return '<span class="badge b-contacted">Contacted</span>';
+        if (stage === "At-risk") return '<span class="badge b-atrisk">At-risk</span>';
+        return '<span class="badge b-lead">Lead</span>';
+      }
+
+      function parseCsvLine(line) {
+        const out = [];
+        let cur = "";
+        let inQuote = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          const next = line[i + 1];
+          if (ch === '"' && inQuote && next === '"') { cur += '"'; i++; continue; }
+          if (ch === '"') { inQuote = !inQuote; continue; }
+          if (ch === "," && !inQuote) { out.push(cur); cur = ""; continue; }
+          cur += ch;
+        }
+        out.push(cur);
+        return out.map((x) => x.trim());
+      }
+      function parseCsvText(text) {
+        const lines = text.replace(/\r/g, "").split("\n").filter((x) => x.trim() !== "");
+        if (!lines.length) return [];
+        const headers = parseCsvLine(lines[0]);
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCsvLine(lines[i]);
+          const row = {};
+          headers.forEach((h, idx) => { row[h] = cols[idx] || ""; });
+          rows.push(row);
+        }
+        return rows;
+      }
+
+      function sanitizeInputUrl(raw) {
+        return String(raw || "").replace(/\s+/g, "");
+      }
+
+      function normalizeCsvLikeUrl(url) {
+        if (!url) return "";
+        if (url.includes("output=csv")) return url;
+        if (url.includes("/pubhtml")) return url.replace("/pubhtml", "/pub").replace(/(\?|&)output=[^&]*/g, "") + (url.includes("?") ? "&" : "?") + "output=csv";
+        if (url.includes("/pub?") && !url.includes("output=")) return `${url}&output=csv`;
+        return url;
+      }
+
+      function loadFromWebAppJsonp(url) {
+        return new Promise((resolve, reject) => {
+          const cb = `crmCustomerCb_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+          const src = `${url}${url.includes("?") ? "&" : "?"}format=json&callback=${cb}`;
+          const script = document.createElement("script");
+          const timer = setTimeout(() => {
+            cleanup();
+            reject(new Error("Timeout gọi Apps Script web app"));
+          }, 15000);
+          function cleanup() {
+            clearTimeout(timer);
+            if (script.parentNode) script.parentNode.removeChild(script);
+            try { delete window[cb]; } catch (_) {}
+          }
+          window[cb] = (data) => {
+            cleanup();
+            resolve(data && data.rows ? data.rows : []);
+          };
+          script.onerror = () => {
+            cleanup();
+            reject(new Error("Không tải được Apps Script endpoint"));
+          };
+          script.src = src;
+          document.body.appendChild(script);
+        });
+      }
+      function getValueByKeys(row, keys) { for (const k of keys) if (Object.prototype.hasOwnProperty.call(row, k)) return row[k]; return ""; }
+      function deriveStage(lead) {
+        const conv = String(lead.conversion || "").toLowerCase();
+        const lc = String(lead.leadClassification || "").toLowerCase();
+        if (conv.includes("paid") || lead.paidDate) return "Paid";
+        if (lc.includes("sql")) return "SQL";
+        if (lead.lastContact) return "Contacted";
+        return "Lead";
+      }
+      function normalizeRows(rows) {
+        return rows.map((r, idx) => {
+          const lead = {
+            id: idx + 1,
+            leadId: getValueByKeys(r, ["lead_id", "Lead ID"]),
+            customerId: getValueByKeys(r, ["customer_id", "Customer ID"]),
+            fullName: getValueByKeys(r, ["full_name", "Họ và Tên"]),
+            phone: getValueByKeys(r, ["phone", "SĐT"]),
+            email: getValueByKeys(r, ["email", "Email"]),
+            leadSource: getValueByKeys(r, ["lead_source", "Nguồn Leads"]),
+            conversion: getValueByKeys(r, ["conversion", "Conversion"]),
+            leadClassification: getValueByKeys(r, ["lead_classification", "Phân loại lead"]),
+            createdDate: parseDateFlexible(getValueByKeys(r, ["date_lead_created", "Date Lead Created"])),
+            lastContact: parseDateFlexible(getValueByKeys(r, ["last_contact", "Last-time contact"])),
+            paidDate: parseDateFlexible(getValueByKeys(r, ["paid_date", "Ngày chuyển đổi Paid"])),
+            cac: toOptionalNumber(getValueByKeys(r, ["cac_usd", "CAC USD", "CAC"])),
+            roas: toOptionalNumber(getValueByKeys(r, ["roas", "ROAS"])),
+            ltv: toOptionalNumber(getValueByKeys(r, ["ltv_usd", "LTV USD", "LTV"])),
+          };
+          lead.customerKey = getValueByKeys(r, ["customer_key"]) || lead.customerId || lead.phone || lead.email || lead.leadId || `lead-${lead.id}`;
+          lead.lifecycleStage = getValueByKeys(r, ["lifecycle_stage"]) || deriveStage(lead);
+          return lead;
+        }).filter((x) => x.customerKey);
+      }
+
+      function renderCustomer(leads) {
+        if (!leads.length) {
+          dom.kpiGrid.innerHTML = "<div class='card'><p>Không tìm thấy khách hàng.</p></div>";
+          dom.timeline.innerHTML = "";
+          dom.leadRows.innerHTML = "";
+          return;
+        }
+        const sorted = [...leads].sort((a, b) => (a.createdDate?.getTime() || 0) - (b.createdDate?.getTime() || 0));
+        const latest = [...leads].sort((a, b) => ((b.lastContact || b.createdDate || new Date(0)).getTime() - (a.lastContact || a.createdDate || new Date(0)).getTime()))[0];
+        const name = latest.fullName || "(Không tên)";
+        const cid = latest.customerId || "";
+        dom.title.textContent = `${name}${cid ? ` - ${cid}` : ""}`;
+        dom.subtitle.textContent = `Customer key: ${latest.customerKey}`;
+
+        const lastCac = [...sorted].reverse().find((x) => x.cac !== null)?.cac ?? null;
+        const lastRoas = [...sorted].reverse().find((x) => x.roas !== null)?.roas ?? null;
+        const lastLtv = [...sorted].reverse().find((x) => x.ltv !== null)?.ltv ?? null;
+        const currentStage = latest.lifecycleStage || "Lead";
+
+        const cards = [
+          { title: "Current Stage", value: badge(currentStage), raw: true, desc: `Lead records: ${fmtNum(leads.length)}` },
+          { title: "CAC", value: fmtMoney(lastCac), desc: "Theo record mới nhất có CAC" },
+          { title: "ROAS", value: fmtFloat(lastRoas), desc: "Theo record mới nhất có ROAS" },
+          { title: "LTV", value: fmtMoney(lastLtv), desc: "Theo record mới nhất có LTV" },
+        ];
+        dom.kpiGrid.innerHTML = cards.map((c) => `
+          <div class="card">
+            <div class="title">${c.title}</div>
+            <div class="value">${c.raw ? c.value : c.value}</div>
+            <p>${c.desc}</p>
+          </div>
+        `).join("");
+
+        const timeline = [];
+        sorted.forEach((l) => {
+          if (l.createdDate) timeline.push({ date: l.createdDate, title: "Lead created", sub: `Lead ID: ${l.leadId || "-"}` });
+          if (l.leadClassification && String(l.leadClassification).toLowerCase().includes("sql")) timeline.push({ date: l.createdDate || l.lastContact, title: "SQL", sub: l.leadClassification });
+          if (l.paidDate || String(l.conversion).toLowerCase().includes("paid")) timeline.push({ date: l.paidDate || l.lastContact || l.createdDate, title: "Paid", sub: l.conversion || "Paid" });
+          if (l.lastContact) timeline.push({ date: l.lastContact, title: "Contact", sub: `Source: ${l.leadSource || "-"}` });
+        });
+        timeline.sort((a, b) => (a.date?.getTime() || 0) - (b.date?.getTime() || 0));
+        dom.timeline.innerHTML = timeline.map((t) => `
+          <div class="timeline-item">
+            <div class="t-date">${formatDate(t.date)}</div>
+            <div class="t-title">${t.title}</div>
+            <div class="t-sub">${t.sub}</div>
+          </div>
+        `).join("");
+
+        dom.leadRows.innerHTML = sorted.map((l) => `
+          <tr>
+            <td>${l.leadId || "-"}</td>
+            <td>${formatDate(l.createdDate)}</td>
+            <td>${formatDate(l.lastContact)}</td>
+            <td>${l.leadSource || "-"}</td>
+            <td>${badge(l.lifecycleStage)}</td>
+            <td>${l.conversion || "-"}</td>
+            <td>${fmtMoney(l.cac)}</td>
+            <td>${fmtFloat(l.roas)}</td>
+            <td>${fmtMoney(l.ltv)}</td>
+          </tr>
+        `).join("");
+      }
+
+      async function loadData() {
+        dom.backLink.href = csvUrlParam
+          ? `burgerprints-crm-lifecycle-dashboard.html?csvUrl=${encodeURIComponent(csvUrlParam)}`
+          : "burgerprints-crm-lifecycle-dashboard.html";
+
+        let leads;
+        if (!csvUrlParam) {
+          leads = normalizeRows(SAMPLE_ROWS);
+          dom.status.textContent = "Đang dùng dữ liệu mẫu vì chưa có csvUrl.";
+        } else {
+          try {
+            const clean = sanitizeInputUrl(csvUrlParam);
+            if (clean.includes("script.google.com") && (clean.endsWith("/exec") || clean.includes("/exec?"))) {
+              const rows = await loadFromWebAppJsonp(clean);
+              leads = normalizeRows(rows);
+            } else {
+              const csvUrl = normalizeCsvLikeUrl(clean);
+              const res = await fetch(csvUrl, { cache: "no-store" });
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const text = await res.text();
+              leads = normalizeRows(parseCsvText(text));
+            }
+            dom.status.textContent = `Tải thành công ${leads.length} lead records.`;
+          } catch (e) {
+            dom.status.textContent = `Lỗi tải CSV: ${e.message}`;
+            leads = normalizeRows(SAMPLE_ROWS);
+          }
+        }
+
+        const key = customerKeyParam || (leads[0]?.customerKey || "");
+        const customerLeads = leads.filter((x) => x.customerKey === key);
+        renderCustomer(customerLeads);
+      }
+
+      loadData();
+    </script>
+  </body>
+</html>
