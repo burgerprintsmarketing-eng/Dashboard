@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -817,6 +817,10 @@
         { Date: "2026-05-15", Campaign: "BGP_14-5-26_Huypa", Spend: "$10,19", Impressions: "3.123", Click: "10", Conversions: "4", CTR: "0,32%", CPC: "$1,02", CPA: "$2,55", ROAS: "0,00x" },
         { Date: "2026-05-16", Campaign: "BGP_14-5-26_Huypa", Spend: "$8,70", Impressions: "2.218", Click: "247", Conversions: "3", CTR: "11,14%", CPC: "$0,04", CPA: "$2,90", ROAS: "0,00x" },
       ];
+
+      // Nguồn mặc định để người xem mở dashboard là có dữ liệu ngay, không cần dán link.
+      const DEFAULT_CSV_URL = "https://script.google.com/macros/s/AKfycbzVtBXl2jtBttwgbs_t8Q9xG8EPpsJlbxqWY0-l1BEjoojRjDiuJYQK3gtpSGI7qlbW/exec";
+      const DEFAULT_ADS_URL = "https://script.google.com/macros/s/AKfycbzNptnTxSHZuKwdDFEgLDhEqJhdbMLDsaKMoORqsDWUNNmStpY_ZifkDTlR2yxm5MHDsQ/exec";
       const SALES_STATUS_DEFAULTS = [
         "Khách hàng đã Paid",
         "Không liên hệ được",
@@ -1969,10 +1973,17 @@
       const initParams = new URLSearchParams(window.location.search);
       const initCsvUrl = initParams.get("csvUrl") || "";
       const initAdsUrl = initParams.get("adsUrl") || "";
-      if (initCsvUrl || initAdsUrl) {
-        if (initCsvUrl) dom.csvUrl.value = initCsvUrl;
-        if (initAdsUrl) dom.adsUrl.value = initAdsUrl;
+      if (initCsvUrl) dom.csvUrl.value = initCsvUrl;
+      if (initAdsUrl) dom.adsUrl.value = initAdsUrl;
+
+      // Nếu không có query param thì dùng nguồn mặc định đã gắn sẵn.
+      if (!dom.csvUrl.value.trim() && DEFAULT_CSV_URL) dom.csvUrl.value = DEFAULT_CSV_URL;
+      if (!dom.adsUrl.value.trim() && DEFAULT_ADS_URL) dom.adsUrl.value = DEFAULT_ADS_URL;
+
+      // Khi đã có nguồn (query hoặc default) thì tự tải luôn để người xem không cần thao tác.
+      if (dom.csvUrl.value.trim() || dom.adsUrl.value.trim()) {
         reloadData();
+        if (!autoEnabled) toggleAutoRefresh();
       } else {
         rawLeads = normalizeRows(SAMPLE_ROWS);
         rawAdsRows = normalizeAdsRows(SAMPLE_ADS_ROWS);
