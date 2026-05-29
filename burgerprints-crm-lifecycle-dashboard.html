@@ -840,8 +840,13 @@
       let autoTimer = null;
 
       const dom = {
+        container: document.querySelector(".container"),
         csvUrl: document.getElementById("csvUrl"),
         adsUrl: document.getElementById("adsUrl"),
+        controlsPanel: document.querySelector(".controls-panel"),
+        filterPanel: document.querySelector(".filter-panel"),
+        sideCol: document.querySelector(".side-col"),
+        firstKpiSection: document.querySelector(".kpi-section"),
         refreshSec: document.getElementById("refreshSec"),
         loadBtn: document.getElementById("loadBtn"),
         toggleAutoBtn: document.getElementById("toggleAutoBtn"),
@@ -861,6 +866,20 @@
         customerTimeline: document.getElementById("customerTimeline"),
         customerTable: document.getElementById("customerTable"),
       };
+
+      function placeFilterPanelForViewport() {
+        if (!dom.filterPanel || !dom.sideCol || !dom.controlsPanel || !dom.firstKpiSection) return;
+        const isMobile = window.matchMedia("(max-width: 760px)").matches;
+        if (isMobile) {
+          if (dom.filterPanel.parentElement !== dom.container) {
+            dom.controlsPanel.insertAdjacentElement("afterend", dom.filterPanel);
+          }
+          return;
+        }
+        if (dom.filterPanel.parentElement !== dom.sideCol) {
+          dom.sideCol.insertBefore(dom.filterPanel, dom.sideCol.firstElementChild);
+        }
+      }
 
       function fmtNum(v) { return new Intl.NumberFormat("vi-VN").format(v || 0); }
       function fmtMoney(v) {
@@ -1944,6 +1963,7 @@
 
       dom.loadBtn.addEventListener("click", reloadData);
       dom.toggleAutoBtn.addEventListener("click", toggleAutoRefresh);
+      window.addEventListener("resize", placeFilterPanelForViewport);
       dom.customerSelect.addEventListener("change", () => renderCustomerDetail(getFilteredCustomers()));
       dom.customerTable.addEventListener("change", (ev) => {
         const target = ev.target;
@@ -1971,6 +1991,7 @@
       [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => el.addEventListener("change", renderAll));
 
       const initParams = new URLSearchParams(window.location.search);
+      placeFilterPanelForViewport();
       const initCsvUrl = initParams.get("csvUrl") || "";
       const initAdsUrl = initParams.get("adsUrl") || "";
       if (initCsvUrl) dom.csvUrl.value = initCsvUrl;
