@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -821,6 +821,7 @@
       // Nguồn mặc định để người xem mở dashboard là có dữ liệu ngay, không cần dán link.
       const DEFAULT_CSV_URL = "https://script.google.com/macros/s/AKfycbzVtBXl2jtBttwgbs_t8Q9xG8EPpsJlbxqWY0-l1BEjoojRjDiuJYQK3gtpSGI7qlbW/exec";
       const DEFAULT_ADS_URL = "https://script.google.com/macros/s/AKfycbzNptnTxSHZuKwdDFEgLDhEqJhdbMLDsaKMoORqsDWUNNmStpY_ZifkDTlR2yxm5MHDsQ/exec";
+      const DEFAULT_SYNC_URL = DEFAULT_CSV_URL;
       const SHOW_CONNECTION_PANEL = false;
       const SALES_STATUS_DEFAULTS = [
         "Khách hàng đã Paid",
@@ -1093,11 +1094,15 @@
           .toLowerCase()
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d")
           .trim();
       }
 
       function mapStageByText(rawText) {
-        const t = normalizeText(rawText).replace(/\s+/g, " ");
+        const t = normalizeText(rawText)
+          .replace(/[^a-z0-9]+/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
         if (!t) return "";
         if (t.includes("trung lead") || t.includes("trung team")) return "Trùng lead/ trùng team";
         if (t.includes("khong phu hop") || t.includes("spam")) return "Không phù hợp/spam";
@@ -1265,7 +1270,10 @@
             return tb - ta;
           });
           const latest = sortedByTouch[0];
-          let stage = latest.lifecycleStage || "Lead";
+          const latestLeadClassStage = sortedByTouch
+            .map((x) => mapStageByText(x.leadClassification))
+            .find(Boolean);
+          let stage = latestLeadClassStage || latest.lifecycleStage || "Lead";
 
 
           const latestCac = sortedByTouch.find((x) => x.cac !== null)?.cac ?? null;
@@ -1568,7 +1576,7 @@
       }
 
       async function pushStageUpdateToWebApp(customer, newStage) {
-        const baseUrl = String(dom.csvUrl.value || "").trim();
+        const baseUrl = String(dom.csvUrl.value || DEFAULT_SYNC_URL || "").trim();
         if (!isAppsScriptExecUrl(baseUrl)) {
           return { ok: false, error: "Data URL chưa phải Apps Script /exec." };
         }
@@ -1585,7 +1593,7 @@
       }
 
       async function pushSalesStatusUpdateToWebApp(customer, newSalesStatus) {
-        const baseUrl = String(dom.csvUrl.value || "").trim();
+        const baseUrl = String(dom.csvUrl.value || DEFAULT_SYNC_URL || "").trim();
         if (!isAppsScriptExecUrl(baseUrl)) {
           return { ok: false, error: "Data URL chưa phải Apps Script /exec." };
         }
@@ -1602,7 +1610,7 @@
       }
 
       async function pushPaidValueUpdateToWebApp(customer, paidValue) {
-        const baseUrl = String(dom.csvUrl.value || "").trim();
+        const baseUrl = String(dom.csvUrl.value || DEFAULT_SYNC_URL || "").trim();
         if (!isAppsScriptExecUrl(baseUrl)) {
           return { ok: false, error: "Data URL chưa phải Apps Script /exec." };
         }
@@ -1622,6 +1630,10 @@
       async function handleStageChange(customerKey, newStage) {
         const customer = customerRows.find((x) => x.customerKey === customerKey);
         if (!customer) return;
+        const prevStage = customer.stage;
+        const prevLeadStages = rawLeads
+          .filter((l) => l.customerKey === customerKey)
+          .map((l) => ({ leadId: l.leadId, lifecycleStage: l.lifecycleStage, leadClassification: l.leadClassification }));
         customer.stage = newStage;
         if (Array.isArray(customer.leads)) {
           customer.leads.forEach((l) => {
@@ -1642,9 +1654,27 @@
         const syncResult = await pushStageUpdateToWebApp(customer, newStage);
         stageSyncPending.delete(customerKey);
         if (syncResult.ok) {
-          dom.status.textContent = `Đã cập nhật stage cho ${customer.fullName}: ${newStage} (đã sync lên Apps Script).`;
+          dom.status.textContent = `Đã cập nhật stage cho ${customer.fullName}: ${newStage} (đã sync lên Apps Script). Đang tải lại dữ liệu chung...`;
+          await reloadData();
         } else {
-          dom.status.textContent = `Đã cập nhật stage local cho ${customer.fullName}: ${newStage}. Không sync được lên Apps Script: ${syncResult.error}`;
+          customer.stage = prevStage;
+          if (Array.isArray(customer.leads)) {
+            customer.leads.forEach((l) => {
+              const prev = prevLeadStages.find((x) => x.leadId === l.leadId);
+              if (!prev) return;
+              l.lifecycleStage = prev.lifecycleStage;
+              l.leadClassification = prev.leadClassification;
+            });
+          }
+          rawLeads
+            .filter((l) => l.customerKey === customerKey)
+            .forEach((l) => {
+              const prev = prevLeadStages.find((x) => x.leadId === l.leadId);
+              if (!prev) return;
+              l.lifecycleStage = prev.lifecycleStage;
+              l.leadClassification = prev.leadClassification;
+            });
+          dom.status.textContent = `Không sync được stage lên Apps Script (${syncResult.error}). Đã trả về giá trị cũ để tránh lệch giữa người xem.`;
         }
         renderAll();
       }
@@ -1652,6 +1682,10 @@
       async function handleSalesStatusChange(customerKey, newSalesStatus) {
         const customer = customerRows.find((x) => x.customerKey === customerKey);
         if (!customer) return;
+        const prevSalesStatus = customer.salesStatusFinal;
+        const prevLeadSalesStatus = rawLeads
+          .filter((l) => l.customerKey === customerKey)
+          .map((l) => ({ leadId: l.leadId, salesStatusFinal: l.salesStatusFinal }));
         customer.salesStatusFinal = newSalesStatus;
         if (Array.isArray(customer.leads)) {
           customer.leads.forEach((l) => {
@@ -1670,9 +1704,25 @@
         const syncResult = await pushSalesStatusUpdateToWebApp(customer, newSalesStatus);
         salesStatusSyncPending.delete(customerKey);
         if (syncResult.ok) {
-          dom.status.textContent = `Đã cập nhật Status từ Sales cho ${customer.fullName}: ${newSalesStatus || "-" } (đã sync lên Apps Script).`;
+          dom.status.textContent = `Đã cập nhật Status từ Sales cho ${customer.fullName}: ${newSalesStatus || "-" } (đã sync lên Apps Script). Đang tải lại dữ liệu chung...`;
+          await reloadData();
         } else {
-          dom.status.textContent = `Đã cập nhật local Status từ Sales cho ${customer.fullName}: ${newSalesStatus || "-"}. Không sync được lên Apps Script: ${syncResult.error}`;
+          customer.salesStatusFinal = prevSalesStatus;
+          if (Array.isArray(customer.leads)) {
+            customer.leads.forEach((l) => {
+              const prev = prevLeadSalesStatus.find((x) => x.leadId === l.leadId);
+              if (!prev) return;
+              l.salesStatusFinal = prev.salesStatusFinal;
+            });
+          }
+          rawLeads
+            .filter((l) => l.customerKey === customerKey)
+            .forEach((l) => {
+              const prev = prevLeadSalesStatus.find((x) => x.leadId === l.leadId);
+              if (!prev) return;
+              l.salesStatusFinal = prev.salesStatusFinal;
+            });
+          dom.status.textContent = `Không sync được Status từ Sales lên Apps Script (${syncResult.error}). Đã trả về giá trị cũ để tránh lệch giữa người xem.`;
         }
         renderAll();
       }
@@ -1680,6 +1730,13 @@
       async function handlePaidValueChange(customerKey, paidValueRaw) {
         const customer = customerRows.find((x) => x.customerKey === customerKey);
         if (!customer) return;
+        const prevRevenue = customer.revenue;
+        const prevLtv = customer.ltv;
+        const prevCac = customer.cac;
+        const prevRoas = customer.roas;
+        const prevLeadFinancials = rawLeads
+          .filter((l) => l.customerKey === customerKey)
+          .map((l) => ({ leadId: l.leadId, revenue: l.revenue, ltv: l.ltv, cac: l.cac, roas: l.roas }));
         const paidValue = paidValueRaw === "" ? null : parseLocalizedNumber(paidValueRaw);
         if (paidValueRaw !== "" && paidValue === null) {
           dom.status.textContent = `Giá trị đơn đã Paid không hợp lệ cho ${customer.fullName}.`;
@@ -1701,9 +1758,34 @@
         const syncResult = await pushPaidValueUpdateToWebApp(customer, paidValue);
         paidValueSyncPending.delete(customerKey);
         if (syncResult.ok) {
-          dom.status.textContent = `Đã cập nhật đơn đã Paid cho ${customer.fullName}: ${paidValue === null ? "-" : fmtMoney(paidValue)} (đã sync lên Apps Script).`;
+          dom.status.textContent = `Đã cập nhật đơn đã Paid cho ${customer.fullName}: ${paidValue === null ? "-" : fmtMoney(paidValue)} (đã sync lên Apps Script). Đang tải lại dữ liệu chung...`;
+          await reloadData();
         } else {
-          dom.status.textContent = `Đã cập nhật local đơn đã Paid cho ${customer.fullName}: ${paidValue === null ? "-" : fmtMoney(paidValue)}. Không sync được lên Apps Script: ${syncResult.error}`;
+          customer.revenue = prevRevenue;
+          customer.ltv = prevLtv;
+          customer.cac = prevCac;
+          customer.roas = prevRoas;
+          if (Array.isArray(customer.leads)) {
+            customer.leads.forEach((l) => {
+              const prev = prevLeadFinancials.find((x) => x.leadId === l.leadId);
+              if (!prev) return;
+              l.revenue = prev.revenue;
+              l.ltv = prev.ltv;
+              l.cac = prev.cac;
+              l.roas = prev.roas;
+            });
+          }
+          rawLeads
+            .filter((l) => l.customerKey === customerKey)
+            .forEach((l) => {
+              const prev = prevLeadFinancials.find((x) => x.leadId === l.leadId);
+              if (!prev) return;
+              l.revenue = prev.revenue;
+              l.ltv = prev.ltv;
+              l.cac = prev.cac;
+              l.roas = prev.roas;
+            });
+          dom.status.textContent = `Không sync được Đơn đã Paid lên Apps Script (${syncResult.error}). Đã trả về giá trị cũ để tránh lệch giữa người xem.`;
         }
         renderAll();
       }
