@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -821,6 +821,7 @@
       // Nguồn mặc định để người xem mở dashboard là có dữ liệu ngay, không cần dán link.
       const DEFAULT_CSV_URL = "https://script.google.com/macros/s/AKfycbzVtBXl2jtBttwgbs_t8Q9xG8EPpsJlbxqWY0-l1BEjoojRjDiuJYQK3gtpSGI7qlbW/exec";
       const DEFAULT_ADS_URL = "https://script.google.com/macros/s/AKfycbzNptnTxSHZuKwdDFEgLDhEqJhdbMLDsaKMoORqsDWUNNmStpY_ZifkDTlR2yxm5MHDsQ/exec";
+      const SHOW_CONNECTION_PANEL = false;
       const SALES_STATUS_DEFAULTS = [
         "Khách hàng đã Paid",
         "Không liên hệ được",
@@ -879,6 +880,11 @@
         if (dom.filterPanel.parentElement !== dom.sideCol) {
           dom.sideCol.insertBefore(dom.filterPanel, dom.sideCol.firstElementChild);
         }
+      }
+
+      function applyConnectionPanelVisibility() {
+        if (!dom.controlsPanel) return;
+        dom.controlsPanel.style.display = SHOW_CONNECTION_PANEL ? "" : "none";
       }
 
       function fmtNum(v) { return new Intl.NumberFormat("vi-VN").format(v || 0); }
@@ -1991,6 +1997,7 @@
       [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => el.addEventListener("change", renderAll));
 
       const initParams = new URLSearchParams(window.location.search);
+      applyConnectionPanelVisibility();
       placeFilterPanelForViewport();
       const initCsvUrl = initParams.get("csvUrl") || "";
       const initAdsUrl = initParams.get("adsUrl") || "";
