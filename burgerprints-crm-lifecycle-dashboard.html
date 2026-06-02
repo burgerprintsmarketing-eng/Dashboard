@@ -498,6 +498,16 @@
     color: #667085;
   }
 
+  .conversion-metric .metric-delta {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .metric-delta.good { color: #0f9f6e; }
+  .metric-delta.bad { color: #d92d20; }
+  .metric-delta.neutral { color: #667085; }
+
   .conversion-metric.cost .metric-number { color: #155ccb; }
   .conversion-metric.rate .metric-number { color: #0f9f6e; }
 
@@ -1497,6 +1507,10 @@
         const end = parseDateFlexible(dom.filterEndDate.value);
         const startDay = toDayTime(start);
         const endDay = toDayTime(end);
+        return getCustomersInRange(startDay, endDay);
+      }
+
+      function getCustomersInRange(startDay, endDay) {
         const source = dom.filterLeadSource.value;
         const stage = dom.filterStage.value;
 
@@ -1545,7 +1559,7 @@
 
       function renderKpis(customers) {
         const total = customers.length;
-        const paid = customers.filter((x) => PAID_LIKE_STAGES.has(x.stage)).length;
+        const paid = customers.filter(isPaidCustomer).length;
         const avgCac = (() => {
           const arr = customers.map((x) => x.cac).filter((x) => x !== null);
           if (!arr.length) return null;
@@ -1563,8 +1577,8 @@
         })();
 
         const cards = [
-          { title: "Tổng khách hàng", value: fmtNum(total), desc: `Tỷ lệ có đơn/Active: ${total > 0 ? fmtPct(paid / total) : "0.0%"}`, icon: "👥" },
-          { title: "Khách có đơn/Active", value: fmtNum(paid), desc: "SQL có đơn + KH đang Active", icon: "🧑‍💼" },
+          { title: "Tổng khách hàng", value: fmtNum(total), desc: `Tỷ lệ Paid: ${total > 0 ? fmtPct(paid / total) : "0.0%"}`, icon: "👥" },
+          { title: "Khách hàng đã Paid", value: fmtNum(paid), desc: "Có status Paid, ngày Paid hoặc doanh thu", icon: "🧑‍💼" },
           { title: "CAC trung bình", value: avgCac === null ? "-" : fmtMoney(avgCac), desc: "Theo khách có dữ liệu CAC", icon: "🎯" },
           { title: "ROAS trung bình", value: avgRoas === null ? "-" : fmtFloat(avgRoas), desc: `LTV / TE ${avgLtv === null ? "-" : fmtMoney(avgLtv)}`, icon: "📈" },
         ];
@@ -1584,6 +1598,10 @@
         const end = parseDateFlexible(dom.filterEndDate.value);
         const startDay = toDayTime(start);
         const endDay = toDayTime(end);
+        return getAdsRowsInRange(startDay, endDay);
+      }
+
+      function getAdsRowsInRange(startDay, endDay) {
         const source = dom.filterLeadSource.value;
         const passSource = source === "All" || /facebook|ads/i.test(source);
 
@@ -1616,8 +1634,49 @@
         return value === null ? "-" : fmtPct(value);
       }
 
-      function renderConversionMetrics(customers) {
-        const adsRows = getFilteredAdsRows();
+      function addDays(date, days) {
+        const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        d.setDate(d.getDate() + days);
+        return d;
+      }
+
+      function daysInclusive(start, end) {
+        return Math.round((toDayTime(end) - toDayTime(start)) / (24 * 60 * 60 * 1000)) + 1;
+      }
+
+      function isSameDay(a, b) {
+        return Boolean(a && b) && toDayTime(a) === toDayTime(b);
+      }
+
+      function lastDayOfMonth(year, monthIndex) {
+        return new Date(year, monthIndex + 1, 0);
+      }
+
+      function getComparisonPeriod(start, end) {
+        if (!start || !end) return null;
+        const span = daysInclusive(start, end);
+        const isSingleDay = span === 1;
+        const isFullWeek = span === 7 && start.getDay() === 1 && end.getDay() === 0;
+        const isFullMonth = start.getDate() === 1 && isSameDay(end, lastDayOfMonth(start.getFullYear(), start.getMonth()));
+        const isFullYear = start.getMonth() === 0 && start.getDate() === 1 && end.getMonth() === 11 && end.getDate() === 31;
+
+        if (isSingleDay || isFullWeek) {
+          return { start: addDays(start, -span), end: addDays(end, -span), label: isSingleDay ? "hôm qua" : "tuần trước" };
+        }
+
+        if (isFullMonth) {
+          const prevStart = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+          return { start: prevStart, end: lastDayOfMonth(prevStart.getFullYear(), prevStart.getMonth()), label: "tháng trước" };
+        }
+
+        if (isFullYear) {
+          return { start: new Date(start.getFullYear() - 1, 0, 1), end: new Date(start.getFullYear() - 1, 11, 31), label: "năm trước" };
+        }
+
+        return { start: addDays(start, -span), end: addDays(start, -1), label: "kỳ trước" };
+      }
+
+      function calculateConversionStats(customers, adsRows) {
         const totalSpend = adsRows.reduce((sum, row) => sum + (row.spend || 0), 0);
         const leadCount = customers.length;
         const mqlCount = customers.filter(isMqlCustomer).length;
@@ -1626,15 +1685,54 @@
         const costPer = (count) => (count > 0 ? totalSpend / count : null);
         const ratio = (num, den) => (den > 0 ? num / den : null);
 
+        return {
+          totalSpend,
+          leadCount,
+          mqlCount,
+          sqlCount,
+          paidCount,
+          values: {
+            costMql: costPer(mqlCount),
+            costSql: costPer(sqlCount),
+            costPaid: costPer(paidCount),
+            mqlLead: ratio(mqlCount, leadCount),
+            sqlMql: ratio(sqlCount, mqlCount),
+            sqlLead: ratio(sqlCount, leadCount),
+            paidMql: ratio(paidCount, mqlCount),
+            paidLead: ratio(paidCount, leadCount),
+          },
+        };
+      }
+
+      function renderDelta(current, previous, kind, label) {
+        if (current === null || previous === null || previous === 0) return `<div class="metric-delta neutral">So với ${label}: -</div>`;
+        const delta = (current - previous) / Math.abs(previous);
+        if (!Number.isFinite(delta) || Math.abs(delta) < 0.0001) return `<div class="metric-delta neutral">So với ${label}: 0.0%</div>`;
+        const isIncrease = delta > 0;
+        const isGood = kind === "cost" ? !isIncrease : isIncrease;
+        const direction = isIncrease ? "Tăng" : "Giảm";
+        return `<div class="metric-delta ${isGood ? "good" : "bad"}">${direction} ${Math.abs(delta * 100).toFixed(1)}% so với ${label}</div>`;
+      }
+
+      function renderConversionMetrics(customers) {
+        const start = parseDateFlexible(dom.filterStartDate.value);
+        const end = parseDateFlexible(dom.filterEndDate.value);
+        const currentStats = calculateConversionStats(customers, getFilteredAdsRows());
+        const comparison = getComparisonPeriod(start, end);
+        const previousStats = comparison
+          ? calculateConversionStats(getCustomersInRange(toDayTime(comparison.start), toDayTime(comparison.end)), getAdsRowsInRange(toDayTime(comparison.start), toDayTime(comparison.end)))
+          : null;
+        const deltaFor = (key, kind) => renderDelta(currentStats.values[key], previousStats?.values[key] ?? null, kind, comparison?.label || "kỳ trước");
+
         const metrics = [
-          { type: "cost", label: "Chi phí ra 1 MQL", value: fmtMoney(costPer(mqlCount)), note: `${fmtMoney(totalSpend)} / ${fmtNum(mqlCount)} MQL` },
-          { type: "cost", label: "Chi phí ra 1 SQL", value: fmtMoney(costPer(sqlCount)), note: `${fmtMoney(totalSpend)} / ${fmtNum(sqlCount)} SQL` },
-          { type: "cost", label: "Chi phí ra 1 Paid", value: fmtMoney(costPer(paidCount)), note: `${fmtMoney(totalSpend)} / ${fmtNum(paidCount)} Paid` },
-          { type: "rate", label: "MQL/Lead", value: fmtRatio(ratio(mqlCount, leadCount)), note: `${fmtNum(mqlCount)} / ${fmtNum(leadCount)}` },
-          { type: "rate", label: "SQL/MQL", value: fmtRatio(ratio(sqlCount, mqlCount)), note: `${fmtNum(sqlCount)} / ${fmtNum(mqlCount)}` },
-          { type: "rate", label: "SQL/Lead", value: fmtRatio(ratio(sqlCount, leadCount)), note: `${fmtNum(sqlCount)} / ${fmtNum(leadCount)}` },
-          { type: "rate", label: "Paid/MQL", value: fmtRatio(ratio(paidCount, mqlCount)), note: `${fmtNum(paidCount)} / ${fmtNum(mqlCount)}` },
-          { type: "rate", label: "Paid/Lead", value: fmtRatio(ratio(paidCount, leadCount)), note: `${fmtNum(paidCount)} / ${fmtNum(leadCount)}` },
+          { type: "cost", label: "Chi phí ra 1 MQL", key: "costMql", value: fmtMoney(currentStats.values.costMql), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.mqlCount)} MQL` },
+          { type: "cost", label: "Chi phí ra 1 SQL", key: "costSql", value: fmtMoney(currentStats.values.costSql), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.sqlCount)} SQL` },
+          { type: "cost", label: "Chi phí ra 1 Paid", key: "costPaid", value: fmtMoney(currentStats.values.costPaid), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.paidCount)} Paid` },
+          { type: "rate", label: "MQL/Lead", key: "mqlLead", value: fmtRatio(currentStats.values.mqlLead), note: `${fmtNum(currentStats.mqlCount)} / ${fmtNum(currentStats.leadCount)}` },
+          { type: "rate", label: "SQL/MQL", key: "sqlMql", value: fmtRatio(currentStats.values.sqlMql), note: `${fmtNum(currentStats.sqlCount)} / ${fmtNum(currentStats.mqlCount)}` },
+          { type: "rate", label: "SQL/Lead", key: "sqlLead", value: fmtRatio(currentStats.values.sqlLead), note: `${fmtNum(currentStats.sqlCount)} / ${fmtNum(currentStats.leadCount)}` },
+          { type: "rate", label: "Paid/MQL", key: "paidMql", value: fmtRatio(currentStats.values.paidMql), note: `${fmtNum(currentStats.paidCount)} / ${fmtNum(currentStats.mqlCount)}` },
+          { type: "rate", label: "Paid/Lead", key: "paidLead", value: fmtRatio(currentStats.values.paidLead), note: `${fmtNum(currentStats.paidCount)} / ${fmtNum(currentStats.leadCount)}` },
         ];
 
         dom.transitionRows.innerHTML = metrics.map((metric) => `
@@ -1642,6 +1740,7 @@
             <div class="metric-label">${metric.label}</div>
             <div class="metric-number">${metric.value}</div>
             <div class="metric-note">${metric.note}</div>
+            ${deltaFor(metric.key, metric.type)}
           </div>
         `).join("");
       }
