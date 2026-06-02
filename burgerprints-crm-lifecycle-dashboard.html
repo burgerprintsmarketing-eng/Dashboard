@@ -464,6 +464,43 @@
     color: #344054;
   }
 
+  .conversion-metric {
+    border: 1px solid #d8e5f7;
+    background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+    border-radius: 8px;
+    padding: 10px 12px;
+    min-height: 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 8px 18px rgba(21, 70, 140, 0.06);
+  }
+
+  .conversion-metric .metric-label {
+    font-size: 12px;
+    font-weight: 900;
+    color: #344054;
+    line-height: 1.25;
+  }
+
+  .conversion-metric .metric-number {
+    margin-top: 8px;
+    font-size: 21px;
+    font-weight: 900;
+    color: #0b1b3f;
+    line-height: 1;
+  }
+
+  .conversion-metric .metric-note {
+    margin-top: 5px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #667085;
+  }
+
+  .conversion-metric.cost .metric-number { color: #155ccb; }
+  .conversion-metric.rate .metric-number { color: #0f9f6e; }
+
   .funnel-panel > h2 {
     font-size: 22px;
     margin-bottom: 8px;
@@ -1380,9 +1417,7 @@
           `;
         }).join("");
 
-        dom.transitionRows.innerHTML = counts.slice(0, -1).map((c, i) => `
-          <div class="chip"><strong>${c.stage}</strong> → <strong>${counts[i + 1].stage}</strong> <span style="color:#E96D1F;font-weight:700">${c.total > 0 ? fmtPct(counts[i + 1].total / c.total) : "0.0%"}</span></div>
-        `).join("");
+        renderConversionMetrics(customers);
       }
 
       function renderKpis(customers) {
@@ -1435,6 +1470,57 @@
           if (day === null) return false;
           return day >= startDay && day <= endDay;
         });
+      }
+
+      function isMqlCustomer(customer) {
+        return !["Không phù hợp/spam", "Trùng lead/ trùng team", "Không liên hệ được"].includes(customer.stage);
+      }
+
+      function isSqlCustomer(customer) {
+        return ["SQL - Đang có đơn", "SQL - Đã có đơn TT khác", "KH đang Active"].includes(customer.stage);
+      }
+
+      function isPaidCustomer(customer) {
+        const salesStatus = normalizeText(customer.salesStatusFinal);
+        return salesStatus.includes("paid") || customer.revenue > 0 || (customer.leads || []).some((lead) => {
+          const conversion = normalizeText(lead.conversion);
+          const leadSalesStatus = normalizeText(lead.salesStatusFinal);
+          return conversion.includes("paid") || leadSalesStatus.includes("paid") || Boolean(lead.paidDate) || lead.revenue > 0;
+        });
+      }
+
+      function fmtRatio(value) {
+        return value === null ? "-" : fmtPct(value);
+      }
+
+      function renderConversionMetrics(customers) {
+        const adsRows = getFilteredAdsRows();
+        const totalSpend = adsRows.reduce((sum, row) => sum + (row.spend || 0), 0);
+        const leadCount = customers.length;
+        const mqlCount = customers.filter(isMqlCustomer).length;
+        const sqlCount = customers.filter(isSqlCustomer).length;
+        const paidCount = customers.filter(isPaidCustomer).length;
+        const costPer = (count) => (count > 0 ? totalSpend / count : null);
+        const ratio = (num, den) => (den > 0 ? num / den : null);
+
+        const metrics = [
+          { type: "cost", label: "Chi phí ra 1 MQL", value: fmtMoney(costPer(mqlCount)), note: `${fmtMoney(totalSpend)} / ${fmtNum(mqlCount)} MQL` },
+          { type: "cost", label: "Chi phí ra 1 SQL", value: fmtMoney(costPer(sqlCount)), note: `${fmtMoney(totalSpend)} / ${fmtNum(sqlCount)} SQL` },
+          { type: "cost", label: "Chi phí ra 1 Paid", value: fmtMoney(costPer(paidCount)), note: `${fmtMoney(totalSpend)} / ${fmtNum(paidCount)} Paid` },
+          { type: "rate", label: "MQL/Lead", value: fmtRatio(ratio(mqlCount, leadCount)), note: `${fmtNum(mqlCount)} / ${fmtNum(leadCount)}` },
+          { type: "rate", label: "SQL/MQL", value: fmtRatio(ratio(sqlCount, mqlCount)), note: `${fmtNum(sqlCount)} / ${fmtNum(mqlCount)}` },
+          { type: "rate", label: "SQL/Lead", value: fmtRatio(ratio(sqlCount, leadCount)), note: `${fmtNum(sqlCount)} / ${fmtNum(leadCount)}` },
+          { type: "rate", label: "Paid/MQL", value: fmtRatio(ratio(paidCount, mqlCount)), note: `${fmtNum(paidCount)} / ${fmtNum(mqlCount)}` },
+          { type: "rate", label: "Paid/Lead", value: fmtRatio(ratio(paidCount, leadCount)), note: `${fmtNum(paidCount)} / ${fmtNum(leadCount)}` },
+        ];
+
+        dom.transitionRows.innerHTML = metrics.map((metric) => `
+          <div class="conversion-metric ${metric.type}">
+            <div class="metric-label">${metric.label}</div>
+            <div class="metric-number">${metric.value}</div>
+            <div class="metric-note">${metric.note}</div>
+          </div>
+        `).join("");
       }
 
       function renderAdsKpis() {
