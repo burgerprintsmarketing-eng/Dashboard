@@ -840,6 +840,8 @@
       let paidValueSyncPending = new Set();
       let autoEnabled = false;
       let autoTimer = null;
+      let renderAllFrame = null;
+      let renderAllTimer = null;
 
       const dom = {
         container: document.querySelector(".container"),
@@ -1424,6 +1426,10 @@
         const end = parseDateFlexible(dom.filterEndDate.value);
         const startDay = toDayTime(start);
         const endDay = toDayTime(end);
+        const source = dom.filterLeadSource.value;
+        const passSource = source === "All" || /facebook|ads/i.test(source);
+
+        if (!passSource) return [];
         return rawAdsRows.filter((r) => {
           const day = toDayTime(r.date);
           if (day === null) return false;
@@ -1887,6 +1893,18 @@
         renderCustomerSelector(filtered);
       }
 
+      function scheduleRenderAll(delay = 80) {
+        if (renderAllTimer) clearTimeout(renderAllTimer);
+        renderAllTimer = setTimeout(() => {
+          renderAllTimer = null;
+          if (renderAllFrame) cancelAnimationFrame(renderAllFrame);
+          renderAllFrame = requestAnimationFrame(() => {
+            renderAllFrame = null;
+            renderAll();
+          });
+        }, delay);
+      }
+
       function sanitizeInputUrl(raw) {
         return String(raw || "").replace(/\s+/g, "");
       }
@@ -2076,7 +2094,10 @@
         if (!key) return;
         handlePaidValueChange(key, target.value);
       });
-      [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => el.addEventListener("change", renderAll));
+      [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => {
+        el.addEventListener("change", () => scheduleRenderAll(0));
+        el.addEventListener("input", () => scheduleRenderAll(120));
+      });
 
       const initParams = new URLSearchParams(window.location.search);
       applyConnectionPanelVisibility();
