@@ -1676,14 +1676,30 @@
           if (isPaidCustomer(customer)) day.paid += 1;
         });
 
+        let cumulativeSpend = 0;
+        let cumulativeMql = 0;
+        let cumulativeSql = 0;
+        let cumulativePaid = 0;
+
         return Array.from(byDate.values())
           .sort((a, b) => a.dateKey.localeCompare(b.dateKey))
-          .map((day) => ({
-            ...day,
-            mqlCost: day.mql > 0 ? day.spend / day.mql : null,
-            sqlCost: day.sql > 0 ? day.spend / day.sql : null,
-            paidCost: day.paid > 0 ? day.spend / day.paid : null,
-          }));
+          .map((day) => {
+            cumulativeSpend += day.spend;
+            cumulativeMql += day.mql;
+            cumulativeSql += day.sql;
+            cumulativePaid += day.paid;
+
+            return {
+              ...day,
+              cumulativeSpend,
+              cumulativeMql,
+              cumulativeSql,
+              cumulativePaid,
+              mqlCost: cumulativeMql > 0 ? cumulativeSpend / cumulativeMql : null,
+              sqlCost: cumulativeSql > 0 ? cumulativeSpend / cumulativeSql : null,
+              paidCost: cumulativePaid > 0 ? cumulativeSpend / cumulativePaid : null,
+            };
+          });
       }
 
       function renderConversionTrendChart(customers) {
@@ -1732,10 +1748,11 @@
           const meta = seriesMeta[key];
           const points = data.map((day, idx) => ({ day, idx, value: day[meta.key] })).filter((p) => p.value !== null);
           if (!points.length) return "";
+          const countKey = key === "mql" ? "cumulativeMql" : key === "sql" ? "cumulativeSql" : "cumulativePaid";
           const path = points.map((p, i) => `${i === 0 ? "M" : "L"} ${x(p.idx).toFixed(2)} ${y(p.value).toFixed(2)}`).join(" ");
           const dots = points.map((p) => `
             <circle class="trend-dot" cx="${x(p.idx).toFixed(2)}" cy="${y(p.value).toFixed(2)}" r="4" fill="${meta.color}">
-              <title>${escapeAttr(`${meta.label} | ${p.day.dateKey}: ${fmtMoney(p.value)}`)}</title>
+              <title>${escapeAttr(`${meta.label} | ${p.day.dateKey}: ${fmtMoney(p.value)} (${fmtMoney(p.day.cumulativeSpend)} / ${fmtNum(p.day[countKey])})`)}</title>
             </circle>
           `).join("");
           return `<path class="trend-line" d="${path}" stroke="${meta.color}"></path>${dots}`;
