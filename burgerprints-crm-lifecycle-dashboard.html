@@ -1155,7 +1155,7 @@
         return Number.isFinite(n) ? n : null;
       }
 
-      function parseDateFlexible(raw) {
+      function parseDateFlexible(raw, preferMdy = false) {
         if (raw === null || raw === undefined || raw === "") return null;
         if (raw instanceof Date && !Number.isNaN(raw.getTime())) return raw;
 
@@ -1223,12 +1223,11 @@
             const dt = buildDate(y, p1, p2); // MM/DD/YYYY
             if (dt) return dt;
           } else {
-            // Trường hợp mơ hồ (<=12), ưu tiên DD/MM trước để hướng CRM,
-            // nếu không hợp lệ thì fallback MM/DD.
-            const dtDdMm = buildDate(y, p2, p1);
-            if (dtDdMm) return dtDdMm;
-            const dtMmDd = buildDate(y, p1, p2);
-            if (dtMmDd) return dtMmDd;
+            // Apps Script JSON thường trả ngày dạng MM/DD/YYYY; dữ liệu nhập tay có thể là DD/MM/YYYY.
+            const primary = preferMdy ? buildDate(y, p1, p2) : buildDate(y, p2, p1);
+            if (primary) return primary;
+            const fallback = preferMdy ? buildDate(y, p2, p1) : buildDate(y, p1, p2);
+            if (fallback) return fallback;
           }
         }
 
@@ -1253,6 +1252,15 @@
       function toDayTime(d) {
         if (!d) return null;
         return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      }
+
+      function getFilterDateRange() {
+        const start = parseDateFlexible(dom.filterStartDate.value);
+        let end = parseDateFlexible(dom.filterEndDate.value);
+        if (start && !end) {
+          end = lastDayOfMonth(start.getFullYear(), start.getMonth());
+        }
+        return { start, end, startDay: toDayTime(start), endDay: toDayTime(end) };
       }
 
       function splitMulti(v) {
@@ -1385,12 +1393,12 @@
             platforms: splitMulti(getValueByKeys(r, ["platforms", "Nền tảng"])),
             market: getValueByKeys(r, ["market", "Thị trường FF"]),
             note: getValueByKeys(r, ["note", "Note"]),
-            lastContact: parseDateFlexible(getValueByKeys(r, ["last_contact", "Last-time contact"])),
+            lastContact: parseDateFlexible(getValueByKeys(r, ["last_contact", "Last-time contact"]), true),
             conversion: getValueByKeys(r, ["conversion", "Conversion"]),
-            createdDate: parseDateFlexible(getValueByKeys(r, ["date_lead_created", "Date Lead Created"])),
+            createdDate: parseDateFlexible(getValueByKeys(r, ["date_lead_created", "Date Lead Created"]), true),
             daysToConvert: getValueByKeys(r, ["days_to_convert", "Số ngày chuyển đổi"]),
             leadClassification: getValueByKeys(r, ["lead_classification", "Phân loại lead"]),
-            paidDate: parseDateFlexible(getValueByKeys(r, ["paid_date", "Ngày chuyển đổi Paid"])),
+            paidDate: parseDateFlexible(getValueByKeys(r, ["paid_date", "Ngày chuyển đổi Paid"]), true),
             salesStatusFinal: getValueByKeys(r, ["sales_status_final", "Status từ Sales"]),
             barrier: getValueByKeys(r, ["barrier", "Rào cản"]),
             leadOwner: getValueByKeys(r, ["lead_owner", "Người tạo Leads"]),
@@ -1574,10 +1582,7 @@
       }
 
       function getFilteredCustomers() {
-        const start = parseDateFlexible(dom.filterStartDate.value);
-        const end = parseDateFlexible(dom.filterEndDate.value);
-        const startDay = toDayTime(start);
-        const endDay = toDayTime(end);
+        const { startDay, endDay } = getFilterDateRange();
         return getCustomersInRange(startDay, endDay);
       }
 
@@ -1634,9 +1639,8 @@
 
       function renderKpis(customers) {
         const total = customers.length;
-        const start = parseDateFlexible(dom.filterStartDate.value);
-        const end = parseDateFlexible(dom.filterEndDate.value);
-        const paid = getPaidCustomersInRange(toDayTime(start), toDayTime(end)).length;
+        const { startDay, endDay } = getFilterDateRange();
+        const paid = getPaidCustomersInRange(startDay, endDay).length;
         const avgCac = (() => {
           const arr = customers.map((x) => x.cac).filter((x) => x !== null);
           if (!arr.length) return null;
@@ -1671,10 +1675,7 @@
       }
 
       function getFilteredAdsRows() {
-        const start = parseDateFlexible(dom.filterStartDate.value);
-        const end = parseDateFlexible(dom.filterEndDate.value);
-        const startDay = toDayTime(start);
-        const endDay = toDayTime(end);
+        const { startDay, endDay } = getFilterDateRange();
         return getAdsRowsInRange(startDay, endDay);
       }
 
@@ -1814,10 +1815,7 @@
       }
 
       function renderConversionMetrics(customers) {
-        const start = parseDateFlexible(dom.filterStartDate.value);
-        const end = parseDateFlexible(dom.filterEndDate.value);
-        const startDay = toDayTime(start);
-        const endDay = toDayTime(end);
+        const { start, end, startDay, endDay } = getFilterDateRange();
         const currentStats = calculateConversionStats(customers, getFilteredAdsRows(), getPaidCustomersInRange(startDay, endDay));
         const comparison = getComparisonPeriod(start, end);
         const previousStats = comparison
@@ -1916,7 +1914,8 @@
           if (isSqlCustomer(customer)) day.sql += 1;
         });
 
-        getPaidCustomersInRange(toDayTime(parseDateFlexible(dom.filterStartDate.value)), toDayTime(parseDateFlexible(dom.filterEndDate.value))).forEach((customer) => {
+        const { startDay, endDay } = getFilterDateRange();
+        getPaidCustomersInRange(startDay, endDay).forEach((customer) => {
           const key = formatDate(customer.paidDate);
           if (key === "-") return;
           ensure(key).paid += 1;
