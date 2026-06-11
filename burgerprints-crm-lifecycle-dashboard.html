@@ -180,6 +180,10 @@
     background: linear-gradient(135deg, #16a34a, #15803d);
   }
 
+  .controls-panel {
+    display: none;
+  }
+
   .filter-panel h2::before {
     content: "⏷";
     background: linear-gradient(135deg, #2563eb, #1d4ed8);
@@ -357,94 +361,100 @@
 
   .funnel-core {
     position: relative;
-    padding: 8px 6px 4px;
+    padding: 2px 0 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
 
   .funnel-core::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: -4px;
-    transform: translateX(-50%);
-    width: 64%;
-    height: 46px;
-    border-radius: 999px;
-    background: radial-gradient(ellipse at center, rgba(59,130,246,.2), rgba(59,130,246,0));
-    pointer-events: none;
+    display: none;
   }
 
   .funnel-rows {
     display: grid;
-    gap: 6px;
+    grid-template-columns: repeat(10, minmax(132px, 1fr));
+    gap: 8px;
+    min-width: 1320px;
   }
 
   .funnel-row {
-    display: grid;
-    grid-template-columns: 270px minmax(0, 1fr) 42px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
-    align-items: center;
+    min-height: 142px;
+    padding: 10px;
+    border: 1px solid #dbe7f6;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: 0 8px 18px rgba(21, 70, 140, 0.06);
+    overflow: hidden;
+  }
+
+  .funnel-row::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: var(--stage-color, #4C9AFF);
   }
 
   .funnel-info {
     min-width: 0;
-    display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
-    gap: 6px;
-    align-items: center;
+    display: contents;
   }
 
   .funnel-label,
   .funnel-status {
-    background: #fff;
-    border: 1px solid #dae6f6;
-    border-radius: 8px;
-    padding: 6px 8px;
-    font-size: 12px;
-    font-weight: 800;
-    color: #1f2937;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
     line-height: 1.2;
   }
 
+  .funnel-label {
+    min-height: 30px;
+    font-size: 12px;
+    font-weight: 900;
+    color: #101828;
+  }
+
   .funnel-status {
+    min-height: 38px;
+    font-size: 11px;
     font-weight: 700;
     color: #475467;
     margin-top: 0;
   }
 
   .funnel-track {
-    display: flex;
-    justify-content: center;
-    position: relative;
+    display: none;
   }
 
   .funnel-shape {
-    height: 42px;
-    min-width: 170px;
-    border-radius: 999px / 18px;
-    clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 26px;
-    font-weight: 900;
-    text-shadow: 0 1px 2px rgba(0,0,0,.3);
-    box-shadow:
-      inset 0 2px 0 rgba(255,255,255,.34),
-      0 8px 18px rgba(17, 24, 39, 0.25);
+    display: none;
   }
 
   .funnel-meta {
-    text-align: right;
+    margin-top: auto;
+    text-align: left;
+    min-width: 0;
   }
 
-  .funnel-count { display: none; }
+  .funnel-count {
+    display: block;
+    font-size: 30px;
+    font-weight: 900;
+    color: var(--stage-color, #155ccb);
+    line-height: 1;
+  }
 
   .funnel-rate {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 800;
-    color: #475467;
-    margin-top: 0;
+    color: #667085;
+    margin-top: 6px;
   }
 
   .transition {
@@ -468,12 +478,34 @@
     border: 1px solid #d8e5f7;
     background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 12px 13px;
     min-height: 72px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     box-shadow: 0 8px 18px rgba(21, 70, 140, 0.06);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .conversion-metric::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: var(--metric-accent, #155ccb);
+  }
+
+  .conversion-metric::after {
+    content: "";
+    position: absolute;
+    right: -24px;
+    top: -24px;
+    width: 82px;
+    height: 82px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--metric-accent, #155ccb) 16%, transparent);
+    pointer-events: none;
   }
 
   .conversion-metric .metric-label {
@@ -485,9 +517,9 @@
 
   .conversion-metric .metric-number {
     margin-top: 8px;
-    font-size: 21px;
+    font-size: 26px;
     font-weight: 900;
-    color: #0b1b3f;
+    color: var(--metric-accent, #0b1b3f);
     line-height: 1;
   }
 
@@ -504,12 +536,30 @@
     font-weight: 900;
   }
 
+  .conversion-metric .metric-purpose {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #e8f0fb;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #475467;
+    line-height: 1.25;
+  }
+
   .metric-delta.good { color: #0f9f6e; }
   .metric-delta.bad { color: #d92d20; }
   .metric-delta.neutral { color: #667085; }
 
-  .conversion-metric.cost .metric-number { color: #155ccb; }
-  .conversion-metric.rate .metric-number { color: #0f9f6e; }
+  .conversion-metric.count { background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%); }
+  .conversion-metric.cost { background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%); }
+  .conversion-metric.rate { background: linear-gradient(180deg, #ffffff 0%, #f3fbf7 100%); }
+  .conversion-metric.tone-lead { --metric-accent: #2563eb; }
+  .conversion-metric.tone-mql { --metric-accent: #0ea5e9; }
+  .conversion-metric.tone-sql { --metric-accent: #f97316; }
+  .conversion-metric.tone-paid { --metric-accent: #16a34a; }
+  .conversion-metric.tone-active { --metric-accent: #eab308; }
+  .conversion-metric.tone-cost { --metric-accent: #155ccb; }
+  .conversion-metric.tone-rate { --metric-accent: #0f9f6e; }
 
   .trend-panel {
     margin-top: 12px;
@@ -633,7 +683,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
-    min-width: 1180px;
+    min-width: 1420px;
   }
 
   th, td {
@@ -774,9 +824,7 @@
   @media (max-width: 1024px) {
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grid-3 { grid-template-columns: 1fr; }
-    .funnel-row { grid-template-columns: 1fr; gap: 8px; }
-    .funnel-info { grid-template-columns: 1fr; }
-    .funnel-meta { text-align: left; }
+    .funnel-rows { grid-template-columns: repeat(10, minmax(132px, 150px)); }
     .transition { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
@@ -786,7 +834,9 @@
     h2, .kpi-section h2, .controls-panel h2, .filter-panel h2, .panel > h2 { font-size: 25px; }
     .head-actions { display: none; }
     .kpis, .transition, .grid-4, .grid-2 { grid-template-columns: 1fr; }
-    .funnel-shape { min-width: 170px; height: 54px; font-size: 28px; }
+    .funnel-rows { grid-template-columns: repeat(10, minmax(128px, 142px)); min-width: 1280px; }
+    .funnel-row { min-height: 132px; padding: 9px; }
+    .funnel-count { font-size: 26px; }
     .metric-value { font-size: 30px; }
   }
 </style>
@@ -843,6 +893,7 @@
       <div class="layout-grid section">
         <div class="main-col">
           <div class="panel funnel-panel">
+            <div id="transitionRows" class="transition"></div>
             <h2>Acquisition Funnel</h2>
             <div class="funnel-hero">
               <div id="funnelLeftStats" class="funnel-side"></div>
@@ -851,7 +902,6 @@
               </div>
               <div id="funnelRightStats" class="funnel-side"></div>
             </div>
-            <div id="transitionRows" class="transition"></div>
           </div>
 
           <div class="panel section trend-panel">
@@ -884,6 +934,9 @@
                     <th>Status từ Sales</th>
                     <th>Đơn đã Paid (USD)</th>
                     <th>Lead đầu</th>
+                    <th>Ngày Paid</th>
+                    <th>Thời gian chuyển đổi Paid</th>
+                    <th>Thời gian Active</th>
                     <th>Contact gần nhất</th>
                     <th>CAC</th>
                     <th>ROAS</th>
@@ -999,6 +1052,7 @@
         "Đang tư vấn",
         "Trùng lead sale",
       ];
+
 
       let rawLeads = [];
       let rawAdsRows = [];
@@ -1270,6 +1324,8 @@
           .trim();
       }
 
+
+
       function mapStageByText(rawText) {
         const t = normalizeText(rawText)
           .replace(/[^a-z0-9]+/g, " ")
@@ -1417,6 +1473,8 @@
         return `${base}?${params.toString()}`;
       }
 
+
+
       function aggregateCustomers(leads) {
         const map = new Map();
         leads.forEach((l) => {
@@ -1453,6 +1511,16 @@
           const latestLtv = sortedByTouch.find((x) => x.ltv !== null)?.ltv ?? null;
           const latestRevenue = sortedByTouch.find((x) => x.revenue !== null)?.revenue ?? null;
           const latestSalesStatus = sortedByTouch.find((x) => String(x.salesStatusFinal || "").trim())?.salesStatusFinal || "";
+          const firstPaidDate = [...c.leads]
+            .map((x) => x.paidDate)
+            .filter(Boolean)
+            .sort((a, b) => a.getTime() - b.getTime())[0] || null;
+          const paidConversionDays = firstPaidDate && sortedByCreated[0]?.createdDate
+            ? Math.max(0, daysBetween(sortedByCreated[0].createdDate, firstPaidDate))
+            : null;
+          const activeDays = stage === "KH đang Active" && sortedByCreated[0]?.createdDate
+            ? Math.max(0, daysBetween(sortedByCreated[0].createdDate, latest.lastContact || new Date()))
+            : null;
           let calcCac = latestCac;
           let calcRoas = latestRoas;
           let calcLtv = latestLtv ?? latestRevenue;
@@ -1474,6 +1542,9 @@
             leadCount: c.leads.length,
             firstLeadDate: sortedByCreated[0]?.createdDate || null,
             lastContact: latest.lastContact || latest.createdDate || null,
+            paidDate: firstPaidDate,
+            paidConversionDays,
+            activeDays,
             stage,
             salesStatusFinal: latestSalesStatus,
             revenue: latestRevenue,
@@ -1524,31 +1595,35 @@
         });
       }
 
+      function getPaidCustomersInRange(startDay, endDay) {
+        const source = dom.filterLeadSource.value;
+        const stage = dom.filterStage.value;
+
+        return customerRows.filter((c) => {
+          const day = toDayTime(c.paidDate);
+          const passDate = day !== null && day >= startDay && day <= endDay;
+          const passSource = source === "All" || c.leadSource === source;
+          const passStage = stage === "All" || c.stage === stage;
+          return passDate && passSource && passStage && isPaidCustomer(c);
+        });
+      }
+
       function renderFunnel(customers) {
         const stageSet = new Set(customers.map((x) => x.stage).filter(Boolean));
         const orderedStages = [...FUNNEL_ORDER, ...Array.from(stageSet).filter((s) => !FUNNEL_ORDER.includes(s)).sort()];
         const counts = orderedStages.map((stage) => ({ stage, total: customers.filter((x) => x.stage === stage).length }));
-        const base = Math.max(1, ...counts.map((x) => x.total));
-        let prevWidth = 100;
         dom.funnelRows.innerHTML = counts.map((c, i) => {
-          const rawWidth = (c.total / base) * 100;
-          const floorWidth = c.total > 0 ? 22 : 12;
-          const width = Math.max(floorWidth, Math.min(rawWidth, prevWidth));
-          prevWidth = Math.max(width - 2, 12);
-          const nextRate = i < counts.length - 1 && c.total > 0 ? fmtPct(counts[i + 1].total / c.total) : "-";
+          const color = FUNNEL_COLORS[i % FUNNEL_COLORS.length];
 
           return `
-            <div class="funnel-row">
+            <div class="funnel-row" style="--stage-color:${color};">
               <div class="funnel-info">
                 <div class="funnel-label">${c.stage}</div>
                 <div class="funnel-status">${STAGE_STATUS_MAP[c.stage] || "Theo dõi trạng thái theo stage hiện tại"}</div>
               </div>
-              <div class="funnel-track">
-                <div class="funnel-shape" style="width:${width}%;background:${FUNNEL_COLORS[i % FUNNEL_COLORS.length]}">${fmtNum(c.total)}</div>
-              </div>
               <div class="funnel-meta">
                 <div class="funnel-count">${fmtNum(c.total)}</div>
-                <div class="funnel-rate">${nextRate}</div>
+                <div class="funnel-rate">lead trong stage</div>
               </div>
             </div>
           `;
@@ -1559,7 +1634,9 @@
 
       function renderKpis(customers) {
         const total = customers.length;
-        const paid = customers.filter(isPaidCustomer).length;
+        const start = parseDateFlexible(dom.filterStartDate.value);
+        const end = parseDateFlexible(dom.filterEndDate.value);
+        const paid = getPaidCustomersInRange(toDayTime(start), toDayTime(end)).length;
         const avgCac = (() => {
           const arr = customers.map((x) => x.cac).filter((x) => x !== null);
           if (!arr.length) return null;
@@ -1613,12 +1690,20 @@
         });
       }
 
+      function isDuplicateCustomer(customer) {
+        return customer.stage === "Trùng lead/ trùng team" || customer.stage === "Spam";
+      }
+
       function isMqlCustomer(customer) {
-        return !["Không phù hợp/spam", "Trùng lead/ trùng team", "Không liên hệ được"].includes(customer.stage);
+        return ["MQL", "SQL", "Active", "SQL - Đang có đơn", "SQL - Đã có đơn TT khác", "KH đang Active"].includes(customer.stage);
       }
 
       function isSqlCustomer(customer) {
-        return ["SQL - Đang có đơn", "SQL - Đã có đơn TT khác", "KH đang Active"].includes(customer.stage);
+        return ["SQL", "Active", "SQL - Đang có đơn", "SQL - Đã có đơn TT khác", "KH đang Active"].includes(customer.stage);
+      }
+
+      function isActiveCustomer(customer) {
+        return customer.stage === "Active" || customer.stage === "KH đang Active";
       }
 
       function isPaidCustomer(customer) {
@@ -1676,22 +1761,31 @@
         return { start: addDays(start, -span), end: addDays(start, -1), label: "kỳ trước" };
       }
 
-      function calculateConversionStats(customers, adsRows) {
+      function calculateConversionStats(customers, adsRows, paidCustomers = customers.filter(isPaidCustomer)) {
         const totalSpend = adsRows.reduce((sum, row) => sum + (row.spend || 0), 0);
         const leadCount = customers.length;
+        const duplicateCount = customers.filter(isDuplicateCustomer).length;
         const mqlCount = customers.filter(isMqlCustomer).length;
         const sqlCount = customers.filter(isSqlCustomer).length;
-        const paidCount = customers.filter(isPaidCustomer).length;
+        const paidCount = paidCustomers.length;
+        const paidValue = paidCustomers.reduce((sum, customer) => sum + (customer.revenue || 0), 0);
         const costPer = (count) => (count > 0 ? totalSpend / count : null);
         const ratio = (num, den) => (den > 0 ? num / den : null);
 
         return {
           totalSpend,
           leadCount,
+          duplicateCount,
           mqlCount,
           sqlCount,
           paidCount,
+          paidValue,
           values: {
+            lead: leadCount,
+            mql: mqlCount,
+            sql: sqlCount,
+            paid: paidCount,
+            paidValue,
             costMql: costPer(mqlCount),
             costSql: costPer(sqlCount),
             costPaid: costPer(paidCount),
@@ -1714,33 +1808,81 @@
         return `<div class="metric-delta ${isGood ? "good" : "bad"}">${direction} ${Math.abs(delta * 100).toFixed(1)}% so với ${label}</div>`;
       }
 
+      function fmtDays(value) {
+        if (value === null || value === undefined) return "-";
+        return `${Number(value).toFixed(1)} ngày`;
+      }
+
       function renderConversionMetrics(customers) {
         const start = parseDateFlexible(dom.filterStartDate.value);
         const end = parseDateFlexible(dom.filterEndDate.value);
-        const currentStats = calculateConversionStats(customers, getFilteredAdsRows());
+        const startDay = toDayTime(start);
+        const endDay = toDayTime(end);
+        const currentStats = calculateConversionStats(customers, getFilteredAdsRows(), getPaidCustomersInRange(startDay, endDay));
         const comparison = getComparisonPeriod(start, end);
         const previousStats = comparison
-          ? calculateConversionStats(getCustomersInRange(toDayTime(comparison.start), toDayTime(comparison.end)), getAdsRowsInRange(toDayTime(comparison.start), toDayTime(comparison.end)))
+          ? calculateConversionStats(
+              getCustomersInRange(toDayTime(comparison.start), toDayTime(comparison.end)),
+              getAdsRowsInRange(toDayTime(comparison.start), toDayTime(comparison.end)),
+              getPaidCustomersInRange(toDayTime(comparison.start), toDayTime(comparison.end))
+            )
           : null;
         const deltaFor = (key, kind) => renderDelta(currentStats.values[key], previousStats?.values[key] ?? null, kind, comparison?.label || "kỳ trước");
 
         const metrics = [
-          { type: "cost", label: "Chi phí ra 1 MQL", key: "costMql", value: fmtMoney(currentStats.values.costMql), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.mqlCount)} MQL` },
-          { type: "cost", label: "Chi phí ra 1 SQL", key: "costSql", value: fmtMoney(currentStats.values.costSql), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.sqlCount)} SQL` },
-          { type: "cost", label: "Chi phí ra 1 Paid", key: "costPaid", value: fmtMoney(currentStats.values.costPaid), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.paidCount)} Paid` },
-          { type: "rate", label: "MQL/Lead", key: "mqlLead", value: fmtRatio(currentStats.values.mqlLead), note: `${fmtNum(currentStats.mqlCount)} / ${fmtNum(currentStats.leadCount)}` },
-          { type: "rate", label: "SQL/MQL", key: "sqlMql", value: fmtRatio(currentStats.values.sqlMql), note: `${fmtNum(currentStats.sqlCount)} / ${fmtNum(currentStats.mqlCount)}` },
-          { type: "rate", label: "SQL/Lead", key: "sqlLead", value: fmtRatio(currentStats.values.sqlLead), note: `${fmtNum(currentStats.sqlCount)} / ${fmtNum(currentStats.leadCount)}` },
-          { type: "rate", label: "Paid/MQL", key: "paidMql", value: fmtRatio(currentStats.values.paidMql), note: `${fmtNum(currentStats.paidCount)} / ${fmtNum(currentStats.mqlCount)}` },
-          { type: "rate", label: "Paid/Lead", key: "paidLead", value: fmtRatio(currentStats.values.paidLead), note: `${fmtNum(currentStats.paidCount)} / ${fmtNum(currentStats.leadCount)}` },
+          { type: "count", tone: "lead", label: "Lead", key: "lead", value: fmtNum(currentStats.leadCount), note: "Tổng lead/khách trong bộ lọc" },
+          { type: "count", tone: "mql", label: "MQL", key: "mql", value: fmtNum(currentStats.mqlCount), note: `${fmtNum(currentStats.leadCount)} Lead - ${fmtNum(currentStats.duplicateCount)} lead trùng` },
+          { type: "count", tone: "sql", label: "SQL", key: "sql", value: fmtNum(currentStats.sqlCount), note: "SQL có đơn + TT khác + Active" },
+          { type: "count", tone: "paid", label: "Paid", key: "paid", value: fmtNum(currentStats.paidCount), note: `Theo ngày Paid | Giá trị ${fmtMoney(currentStats.paidValue)}` },
+          {
+            type: "rate",
+            tone: "rate",
+            label: "MQL/Lead",
+            key: "mqlLead",
+            value: fmtRatio(currentStats.values.mqlLead),
+            note: `${fmtNum(currentStats.mqlCount)} / ${fmtNum(currentStats.leadCount)}`,
+            purpose: "Tỷ lệ thấp: xem lại lý do lead trùng để điều chỉnh cách triển khai",
+          },
+          {
+            type: "rate",
+            tone: "rate",
+            label: "SQL/MQL",
+            key: "sqlMql",
+            value: fmtRatio(currentStats.values.sqlMql),
+            note: `${fmtNum(currentStats.sqlCount)} / ${fmtNum(currentStats.mqlCount)}`,
+            purpose: "Kiểm tra độ lệch scoring Lead giữa 2 team",
+          },
+          {
+            type: "rate",
+            tone: "rate",
+            label: "Paid/MQL",
+            key: "paidMql",
+            value: fmtRatio(currentStats.values.paidMql),
+            note: `${fmtNum(currentStats.paidCount)} / ${fmtNum(currentStats.mqlCount)}`,
+            purpose: "Đo nhận diện khách tiềm năng và thành công của chiến dịch",
+          },
+          {
+            type: "rate",
+            tone: "rate",
+            label: "Paid/Lead",
+            key: "paidLead",
+            value: fmtRatio(currentStats.values.paidLead),
+            note: `${fmtNum(currentStats.paidCount)} / ${fmtNum(currentStats.leadCount)}`,
+            purpose: "Đánh giá hiệu suất thu lead của team",
+          },
+          { type: "cost", tone: "cost", label: "Chi phí ra 1 MQL", key: "costMql", value: fmtMoney(currentStats.values.costMql), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.mqlCount)} MQL` },
+          { type: "cost", tone: "cost", label: "Chi phí ra 1 SQL", key: "costSql", value: fmtMoney(currentStats.values.costSql), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.sqlCount)} SQL` },
+          { type: "cost", tone: "cost", label: "Chi phí ra 1 Paid", key: "costPaid", value: fmtMoney(currentStats.values.costPaid), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.paidCount)} Paid` },
+          { type: "rate", tone: "rate", label: "SQL/Lead", key: "sqlLead", value: fmtRatio(currentStats.values.sqlLead), note: `${fmtNum(currentStats.sqlCount)} / ${fmtNum(currentStats.leadCount)}` },
         ];
 
         dom.transitionRows.innerHTML = metrics.map((metric) => `
-          <div class="conversion-metric ${metric.type}">
+          <div class="conversion-metric ${metric.type} tone-${metric.tone || metric.type}">
             <div class="metric-label">${metric.label}</div>
             <div class="metric-number">${metric.value}</div>
             <div class="metric-note">${metric.note}</div>
             ${deltaFor(metric.key, metric.type)}
+            ${metric.purpose ? `<div class="metric-purpose">${metric.purpose}</div>` : ""}
           </div>
         `).join("");
       }
@@ -1772,7 +1914,12 @@
           const day = ensure(key);
           if (isMqlCustomer(customer)) day.mql += 1;
           if (isSqlCustomer(customer)) day.sql += 1;
-          if (isPaidCustomer(customer)) day.paid += 1;
+        });
+
+        getPaidCustomersInRange(toDayTime(parseDateFlexible(dom.filterStartDate.value)), toDayTime(parseDateFlexible(dom.filterEndDate.value))).forEach((customer) => {
+          const key = formatDate(customer.paidDate);
+          if (key === "-") return;
+          ensure(key).paid += 1;
         });
 
         let cumulativeSpend = 0;
@@ -1911,6 +2058,8 @@
         `).join("");
       }
 
+
+
       function isAppsScriptExecUrl(url) {
         const u = String(url || "").trim();
         return u.includes("script.google.com") && (u.endsWith("/exec") || u.includes("/exec?"));
@@ -1918,28 +2067,28 @@
 
       function getStageTone(stage) {
         const tones = {
-          "Newbie tiềm năng": { bg: "#4C9AFF", border: "#1D4ED8", color: "#FFFFFF" },
-          "Newbie đang setup": { bg: "#F6E6D2", border: "#D4A373", color: "#5F4A33" },
-          "Tham khảo chung": { bg: "#DCECEB", border: "#84B7B3", color: "#325D5A" },
-          "SQL - Đang có đơn": { bg: "#EB5B47", border: "#C63D2C", color: "#FFFFFF" },
-          "SQL - Đã có đơn TT khác": { bg: "#E96D1F", border: "#BE5312", color: "#FFFFFF" },
-          "KH đang Active": { bg: "#F2D45C", border: "#D1B03D", color: "#4A3D08" },
-          "Đang verify": { bg: "#CBEA8E", border: "#9EC65A", color: "#37510B" },
-          "Không liên hệ được": { bg: "#D7DADF", border: "#B7BDC6", color: "#3D4048" },
-          "Không phù hợp/spam": { bg: "#6A717D", border: "#525864", color: "#FFFFFF" },
-          "Trùng lead/ trùng team": { bg: "#C8CCD4", border: "#A9AEB8", color: "#2F3540" },
+          "Newbie tiá»m nÄƒng": { bg: "#4C9AFF", border: "#1D4ED8", color: "#FFFFFF" },
+          "Newbie Ä‘ang setup": { bg: "#F6E6D2", border: "#D4A373", color: "#5F4A33" },
+          "Tham kháº£o chung": { bg: "#DCECEB", border: "#84B7B3", color: "#325D5A" },
+          "SQL - Äang cÃ³ Ä‘Æ¡n": { bg: "#EB5B47", border: "#C63D2C", color: "#FFFFFF" },
+          "SQL - ÄÃ£ cÃ³ Ä‘Æ¡n TT khÃ¡c": { bg: "#E96D1F", border: "#BE5312", color: "#FFFFFF" },
+          "KH Ä‘ang Active": { bg: "#F2D45C", border: "#D1B03D", color: "#4A3D08" },
+          "Äang verify": { bg: "#CBEA8E", border: "#9EC65A", color: "#37510B" },
+          "KhÃ´ng liÃªn há»‡ Ä‘Æ°á»£c": { bg: "#D7DADF", border: "#B7BDC6", color: "#3D4048" },
+          "KhÃ´ng phÃ¹ há»£p/spam": { bg: "#6A717D", border: "#525864", color: "#FFFFFF" },
+          "TrÃ¹ng lead/ trÃ¹ng team": { bg: "#C8CCD4", border: "#A9AEB8", color: "#2F3540" },
         };
         return tones[stage] || { bg: "#EBECF0", border: "#D1D5DB", color: "#424956" };
       }
 
       function getSalesStatusTone(status) {
         const tones = {
-          "Khách hàng đã Paid": { bg: "#CBEA8E", border: "#9EC65A", color: "#37510B" },
-          "Không liên hệ được": { bg: "#D7DADF", border: "#B7BDC6", color: "#3D4048" },
-          "KH đang active": { bg: "#F2D45C", border: "#D1B03D", color: "#4A3D08" },
-          "Đã tư vấn đầy đủ": { bg: "#DCECEB", border: "#84B7B3", color: "#325D5A" },
-          "Đang tư vấn": { bg: "#DEEBFF", border: "#4C9AFF", color: "#0747A6" },
-          "Trùng lead sale": { bg: "#C8CCD4", border: "#A9AEB8", color: "#2F3540" },
+          "KhÃ¡ch hÃ ng Ä‘Ã£ Paid": { bg: "#CBEA8E", border: "#9EC65A", color: "#37510B" },
+          "KhÃ´ng liÃªn há»‡ Ä‘Æ°á»£c": { bg: "#D7DADF", border: "#B7BDC6", color: "#3D4048" },
+          "KH Ä‘ang active": { bg: "#F2D45C", border: "#D1B03D", color: "#4A3D08" },
+          "ÄÃ£ tÆ° váº¥n Ä‘áº§y Ä‘á»§": { bg: "#DCECEB", border: "#84B7B3", color: "#325D5A" },
+          "Äang tÆ° váº¥n": { bg: "#DEEBFF", border: "#4C9AFF", color: "#0747A6" },
+          "TrÃ¹ng lead sale": { bg: "#C8CCD4", border: "#A9AEB8", color: "#2F3540" },
         };
         return tones[status] || { bg: "#EBECF0", border: "#D1D5DB", color: "#424956" };
       }
@@ -1955,7 +2104,7 @@
           <select class="stage-select" data-customer-key="${customer.customerKey}" style="background:${currentTone.bg};border-color:${currentTone.border};color:${currentTone.color};">
             ${options}
           </select>
-          ${stageSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Đang sync...</div>" : ""}
+          ${stageSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Äang sync...</div>" : ""}
         `;
       }
 
@@ -1986,7 +2135,7 @@
           <select class="stage-select sales-status-select" data-customer-key="${customer.customerKey}" style="background:${currentTone.bg};border-color:${currentTone.border};color:${currentTone.color};">
             ${html.join("")}
           </select>
-          ${salesStatusSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Đang sync...</div>" : ""}
+          ${salesStatusSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Äang sync...</div>" : ""}
         `;
       }
 
@@ -2023,15 +2172,15 @@
         return `
           <div>
             <input class="paid-value-input" type="number" min="0" step="0.01" data-customer-key="${customer.customerKey}" value="${formatMoneyInput(customer.revenue)}" />
-            ${paidValueSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Đang sync...</div>" : ""}
+            ${paidValueSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Äang sync...</div>" : ""}
           </div>
         `;
       }
 
       async function pushStageUpdateToWebApp(customer, newStage) {
-        const baseUrl = String(dom.csvUrl.value || DEFAULT_SYNC_URL || "").trim();
+        const baseUrl = String(dom.csvUrl.value || "").trim();
         if (!isAppsScriptExecUrl(baseUrl)) {
-          return { ok: false, error: "Data URL chưa phải Apps Script /exec." };
+          return { ok: false, error: "Data URL chÆ°a pháº£i Apps Script /exec." };
         }
         try {
           const result = await loadFromWebAppJsonp(
@@ -2039,16 +2188,16 @@
             { raw: true },
           );
           if (result && result.ok) return { ok: true };
-          return { ok: false, error: (result && result.error) ? String(result.error) : "Apps Script không xác nhận cập nhật stage." };
+          return { ok: false, error: (result && result.error) ? String(result.error) : "Apps Script khÃ´ng xÃ¡c nháº­n cáº­p nháº­t stage." };
         } catch (e) {
-          return { ok: false, error: e && e.message ? e.message : "Lỗi gọi Apps Script." };
+          return { ok: false, error: e && e.message ? e.message : "Lá»—i gá»i Apps Script." };
         }
       }
 
       async function pushSalesStatusUpdateToWebApp(customer, newSalesStatus) {
-        const baseUrl = String(dom.csvUrl.value || DEFAULT_SYNC_URL || "").trim();
+        const baseUrl = String(dom.csvUrl.value || "").trim();
         if (!isAppsScriptExecUrl(baseUrl)) {
-          return { ok: false, error: "Data URL chưa phải Apps Script /exec." };
+          return { ok: false, error: "Data URL chÆ°a pháº£i Apps Script /exec." };
         }
         try {
           const result = await loadFromWebAppJsonp(
@@ -2056,16 +2205,16 @@
             { raw: true },
           );
           if (result && result.ok) return { ok: true };
-          return { ok: false, error: (result && result.error) ? String(result.error) : "Apps Script không xác nhận cập nhật status từ Sales." };
+          return { ok: false, error: (result && result.error) ? String(result.error) : "Apps Script khÃ´ng xÃ¡c nháº­n cáº­p nháº­t status tá»« Sales." };
         } catch (e) {
-          return { ok: false, error: e && e.message ? e.message : "Lỗi gọi Apps Script." };
+          return { ok: false, error: e && e.message ? e.message : "Lá»—i gá»i Apps Script." };
         }
       }
 
       async function pushPaidValueUpdateToWebApp(customer, paidValue) {
-        const baseUrl = String(dom.csvUrl.value || DEFAULT_SYNC_URL || "").trim();
+        const baseUrl = String(dom.csvUrl.value || "").trim();
         if (!isAppsScriptExecUrl(baseUrl)) {
-          return { ok: false, error: "Data URL chưa phải Apps Script /exec." };
+          return { ok: false, error: "Data URL chÆ°a pháº£i Apps Script /exec." };
         }
         try {
           const paidValueParam = paidValue === null ? "" : String(paidValue);
@@ -2074,19 +2223,15 @@
             { raw: true },
           );
           if (result && result.ok) return { ok: true };
-          return { ok: false, error: (result && result.error) ? String(result.error) : "Apps Script không xác nhận cập nhật đơn đã paid." };
+          return { ok: false, error: (result && result.error) ? String(result.error) : "Apps Script khÃ´ng xÃ¡c nháº­n cáº­p nháº­t Ä‘Æ¡n Ä‘Ã£ paid." };
         } catch (e) {
-          return { ok: false, error: e && e.message ? e.message : "Lỗi gọi Apps Script." };
+          return { ok: false, error: e && e.message ? e.message : "Lá»—i gá»i Apps Script." };
         }
       }
 
       async function handleStageChange(customerKey, newStage) {
         const customer = customerRows.find((x) => x.customerKey === customerKey);
         if (!customer) return;
-        const prevStage = customer.stage;
-        const prevLeadStages = rawLeads
-          .filter((l) => l.customerKey === customerKey)
-          .map((l) => ({ leadId: l.leadId, lifecycleStage: l.lifecycleStage, leadClassification: l.leadClassification }));
         customer.stage = newStage;
         if (Array.isArray(customer.leads)) {
           customer.leads.forEach((l) => {
@@ -2107,27 +2252,9 @@
         const syncResult = await pushStageUpdateToWebApp(customer, newStage);
         stageSyncPending.delete(customerKey);
         if (syncResult.ok) {
-          dom.status.textContent = `Đã cập nhật stage cho ${customer.fullName}: ${newStage} (đã sync lên Apps Script). Đang tải lại dữ liệu chung...`;
-          await reloadData();
+          dom.status.textContent = `ÄÃ£ cáº­p nháº­t stage cho ${customer.fullName}: ${newStage} (Ä‘Ã£ sync lÃªn Apps Script).`;
         } else {
-          customer.stage = prevStage;
-          if (Array.isArray(customer.leads)) {
-            customer.leads.forEach((l) => {
-              const prev = prevLeadStages.find((x) => x.leadId === l.leadId);
-              if (!prev) return;
-              l.lifecycleStage = prev.lifecycleStage;
-              l.leadClassification = prev.leadClassification;
-            });
-          }
-          rawLeads
-            .filter((l) => l.customerKey === customerKey)
-            .forEach((l) => {
-              const prev = prevLeadStages.find((x) => x.leadId === l.leadId);
-              if (!prev) return;
-              l.lifecycleStage = prev.lifecycleStage;
-              l.leadClassification = prev.leadClassification;
-            });
-          dom.status.textContent = `Không sync được stage lên Apps Script (${syncResult.error}). Đã trả về giá trị cũ để tránh lệch giữa người xem.`;
+          dom.status.textContent = `ÄÃ£ cáº­p nháº­t stage local cho ${customer.fullName}: ${newStage}. KhÃ´ng sync Ä‘Æ°á»£c lÃªn Apps Script: ${syncResult.error}`;
         }
         renderAll();
       }
@@ -2135,10 +2262,6 @@
       async function handleSalesStatusChange(customerKey, newSalesStatus) {
         const customer = customerRows.find((x) => x.customerKey === customerKey);
         if (!customer) return;
-        const prevSalesStatus = customer.salesStatusFinal;
-        const prevLeadSalesStatus = rawLeads
-          .filter((l) => l.customerKey === customerKey)
-          .map((l) => ({ leadId: l.leadId, salesStatusFinal: l.salesStatusFinal }));
         customer.salesStatusFinal = newSalesStatus;
         if (Array.isArray(customer.leads)) {
           customer.leads.forEach((l) => {
@@ -2157,25 +2280,9 @@
         const syncResult = await pushSalesStatusUpdateToWebApp(customer, newSalesStatus);
         salesStatusSyncPending.delete(customerKey);
         if (syncResult.ok) {
-          dom.status.textContent = `Đã cập nhật Status từ Sales cho ${customer.fullName}: ${newSalesStatus || "-" } (đã sync lên Apps Script). Đang tải lại dữ liệu chung...`;
-          await reloadData();
+          dom.status.textContent = `ÄÃ£ cáº­p nháº­t Status tá»« Sales cho ${customer.fullName}: ${newSalesStatus || "-" } (Ä‘Ã£ sync lÃªn Apps Script).`;
         } else {
-          customer.salesStatusFinal = prevSalesStatus;
-          if (Array.isArray(customer.leads)) {
-            customer.leads.forEach((l) => {
-              const prev = prevLeadSalesStatus.find((x) => x.leadId === l.leadId);
-              if (!prev) return;
-              l.salesStatusFinal = prev.salesStatusFinal;
-            });
-          }
-          rawLeads
-            .filter((l) => l.customerKey === customerKey)
-            .forEach((l) => {
-              const prev = prevLeadSalesStatus.find((x) => x.leadId === l.leadId);
-              if (!prev) return;
-              l.salesStatusFinal = prev.salesStatusFinal;
-            });
-          dom.status.textContent = `Không sync được Status từ Sales lên Apps Script (${syncResult.error}). Đã trả về giá trị cũ để tránh lệch giữa người xem.`;
+          dom.status.textContent = `ÄÃ£ cáº­p nháº­t local Status tá»« Sales cho ${customer.fullName}: ${newSalesStatus || "-"}. KhÃ´ng sync Ä‘Æ°á»£c lÃªn Apps Script: ${syncResult.error}`;
         }
         renderAll();
       }
@@ -2183,16 +2290,9 @@
       async function handlePaidValueChange(customerKey, paidValueRaw) {
         const customer = customerRows.find((x) => x.customerKey === customerKey);
         if (!customer) return;
-        const prevRevenue = customer.revenue;
-        const prevLtv = customer.ltv;
-        const prevCac = customer.cac;
-        const prevRoas = customer.roas;
-        const prevLeadFinancials = rawLeads
-          .filter((l) => l.customerKey === customerKey)
-          .map((l) => ({ leadId: l.leadId, revenue: l.revenue, ltv: l.ltv, cac: l.cac, roas: l.roas }));
         const paidValue = paidValueRaw === "" ? null : parseLocalizedNumber(paidValueRaw);
         if (paidValueRaw !== "" && paidValue === null) {
-          dom.status.textContent = `Giá trị đơn đã Paid không hợp lệ cho ${customer.fullName}.`;
+          dom.status.textContent = `GiÃ¡ trá»‹ Ä‘Æ¡n Ä‘Ã£ Paid khÃ´ng há»£p lá»‡ cho ${customer.fullName}.`;
           renderAll();
           return;
         }
@@ -2211,34 +2311,9 @@
         const syncResult = await pushPaidValueUpdateToWebApp(customer, paidValue);
         paidValueSyncPending.delete(customerKey);
         if (syncResult.ok) {
-          dom.status.textContent = `Đã cập nhật đơn đã Paid cho ${customer.fullName}: ${paidValue === null ? "-" : fmtMoney(paidValue)} (đã sync lên Apps Script). Đang tải lại dữ liệu chung...`;
-          await reloadData();
+          dom.status.textContent = `ÄÃ£ cáº­p nháº­t Ä‘Æ¡n Ä‘Ã£ Paid cho ${customer.fullName}: ${paidValue === null ? "-" : fmtMoney(paidValue)} (Ä‘Ã£ sync lÃªn Apps Script).`;
         } else {
-          customer.revenue = prevRevenue;
-          customer.ltv = prevLtv;
-          customer.cac = prevCac;
-          customer.roas = prevRoas;
-          if (Array.isArray(customer.leads)) {
-            customer.leads.forEach((l) => {
-              const prev = prevLeadFinancials.find((x) => x.leadId === l.leadId);
-              if (!prev) return;
-              l.revenue = prev.revenue;
-              l.ltv = prev.ltv;
-              l.cac = prev.cac;
-              l.roas = prev.roas;
-            });
-          }
-          rawLeads
-            .filter((l) => l.customerKey === customerKey)
-            .forEach((l) => {
-              const prev = prevLeadFinancials.find((x) => x.leadId === l.leadId);
-              if (!prev) return;
-              l.revenue = prev.revenue;
-              l.ltv = prev.ltv;
-              l.cac = prev.cac;
-              l.roas = prev.roas;
-            });
-          dom.status.textContent = `Không sync được Đơn đã Paid lên Apps Script (${syncResult.error}). Đã trả về giá trị cũ để tránh lệch giữa người xem.`;
+          dom.status.textContent = `ÄÃ£ cáº­p nháº­t local Ä‘Æ¡n Ä‘Ã£ Paid cho ${customer.fullName}: ${paidValue === null ? "-" : fmtMoney(paidValue)}. KhÃ´ng sync Ä‘Æ°á»£c lÃªn Apps Script: ${syncResult.error}`;
         }
         renderAll();
       }
@@ -2255,6 +2330,9 @@
             <td>${renderSalesStatusSelect(c)}</td>
             <td>${renderPaidValueInput(c)}</td>
             <td>${formatDate(c.firstLeadDate)}</td>
+            <td>${formatDate(c.paidDate)}</td>
+            <td>${c.paidConversionDays === null ? "-" : `${fmtNum(c.paidConversionDays)} ngày`}</td>
+            <td>${c.activeDays === null ? "-" : `${fmtNum(c.activeDays)} ngày`}</td>
             <td>${formatDate(c.lastContact)}</td>
             <td>${fmtMoney(c.cac)}</td>
             <td>${fmtFloat(c.roas)}</td>
@@ -2272,7 +2350,7 @@
 
       function renderCustomerDetail(customers) {
         if (!customers.length) {
-          dom.customerSummary.innerHTML = "<div class='card'><p>Không có dữ liệu khách hàng.</p></div>";
+          dom.customerSummary.innerHTML = "<div class='card'><p>KhÃ´ng cÃ³ dá»¯ liá»‡u khÃ¡ch hÃ ng.</p></div>";
           dom.customerTimeline.innerHTML = "";
           return;
         }
@@ -2284,19 +2362,19 @@
         dom.customerSummary.innerHTML = `
           <div class="card">
             <div class="title">${c.fullName} ${c.customerId ? `- ${c.customerId}` : ""}</div>
-            <p>Stage hiện tại: ${stageBadge(c.stage)}</p>
+            <p>Stage hiá»‡n táº¡i: ${stageBadge(c.stage)}</p>
             <p>Lead source: <strong>${c.leadSource || "-"}</strong></p>
-            <p>Số lead records: <strong>${fmtNum(c.leadCount)}</strong></p>
+            <p>Sá»‘ lead records: <strong>${fmtNum(c.leadCount)}</strong></p>
             <p>CAC: <strong>${fmtMoney(c.cac)}</strong> | ROAS: <strong>${fmtFloat(c.roas)}</strong> | LTV: <strong>${fmtMoney(c.ltv)}</strong></p>
-            <p>Lead đầu: <strong>${formatDate(c.firstLeadDate)}</strong> | Contact gần nhất: <strong>${formatDate(c.lastContact)}</strong></p>
+            <p>Lead Ä‘áº§u: <strong>${formatDate(c.firstLeadDate)}</strong> | Contact gáº§n nháº¥t: <strong>${formatDate(c.lastContact)}</strong></p>
           </div>
         `;
 
         const timelineItems = [];
         c.leads.forEach((l) => {
           if (l.createdDate) timelineItems.push({ date: l.createdDate, title: "Lead created", sub: `Lead ID: ${l.leadId || "-"} | Source: ${l.leadSource || "-"}` });
-          if (l.consultingStatus) timelineItems.push({ date: l.createdDate || l.lastContact, title: "Contacted", sub: `Trạng thái tư vấn: ${l.consultingStatus}` });
-          if (String(l.leadClassification || "").toLowerCase().includes("sql")) timelineItems.push({ date: l.createdDate || l.lastContact, title: "SQL", sub: `Phân loại lead: ${l.leadClassification}` });
+          if (l.consultingStatus) timelineItems.push({ date: l.createdDate || l.lastContact, title: "Contacted", sub: `Tráº¡ng thÃ¡i tÆ° váº¥n: ${l.consultingStatus}` });
+          if (String(l.leadClassification || "").toLowerCase().includes("sql")) timelineItems.push({ date: l.createdDate || l.lastContact, title: "SQL", sub: `PhÃ¢n loáº¡i lead: ${l.leadClassification}` });
           if (l.paidDate || String(l.conversion || "").toLowerCase().includes("paid")) timelineItems.push({ date: l.paidDate || l.lastContact || l.createdDate, title: "Paid", sub: `Conversion: ${l.conversion || "Paid"}` });
           if (l.lastContact) timelineItems.push({ date: l.lastContact, title: "Last contact", sub: `${l.salesStatusFinal || l.note || "-"}` });
         });
@@ -2310,22 +2388,22 @@
                 <div class="t-sub">${t.sub}</div>
               </div>
             `).join("")
-          : "<div class='timeline-item'><div class='t-sub'>Chưa có timeline cho khách hàng này.</div></div>";
+          : "<div class='timeline-item'><div class='t-sub'>ChÆ°a cÃ³ timeline cho khÃ¡ch hÃ ng nÃ y.</div></div>";
       }
 
-      // Override stage badge theo bộ phân loại mới
+      // Override stage badge theo bá»™ phÃ¢n loáº¡i má»›i
       function stageBadge(stage) {
         const clsMap = {
-          "Newbie tiềm năng": "b-newbie-pot",
-          "Newbie đang setup": "b-newbie-setup",
-          "Tham khảo chung": "b-research",
-          "SQL - Đang có đơn": "b-sql-order",
-          "SQL - Đã có đơn TT khác": "b-sql-other",
-          "KH đang Active": "b-active-kh",
-          "Đang verify": "b-verify",
-          "Không liên hệ được": "b-unreach",
-          "Không phù hợp/spam": "b-spam",
-          "Trùng lead/ trùng team": "b-dup",
+          "Newbie tiá»m nÄƒng": "b-newbie-pot",
+          "Newbie Ä‘ang setup": "b-newbie-setup",
+          "Tham kháº£o chung": "b-research",
+          "SQL - Äang cÃ³ Ä‘Æ¡n": "b-sql-order",
+          "SQL - ÄÃ£ cÃ³ Ä‘Æ¡n TT khÃ¡c": "b-sql-other",
+          "KH Ä‘ang Active": "b-active-kh",
+          "Äang verify": "b-verify",
+          "KhÃ´ng liÃªn há»‡ Ä‘Æ°á»£c": "b-unreach",
+          "KhÃ´ng phÃ¹ há»£p/spam": "b-spam",
+          "TrÃ¹ng lead/ trÃ¹ng team": "b-dup",
         };
         const cls = clsMap[stage] || "b-other";
         return `<span class="badge ${cls}">${stage || "-"}</span>`;
@@ -2336,21 +2414,8 @@
         renderFunnel(filtered);
         renderKpis(filtered);
         renderAdsKpis();
-        renderConversionTrendChart(filtered);
         renderCustomerTable(filtered);
         renderCustomerSelector(filtered);
-      }
-
-      function scheduleRenderAll(delay = 80) {
-        if (renderAllTimer) clearTimeout(renderAllTimer);
-        renderAllTimer = setTimeout(() => {
-          renderAllTimer = null;
-          if (renderAllFrame) cancelAnimationFrame(renderAllFrame);
-          renderAllFrame = requestAnimationFrame(() => {
-            renderAllFrame = null;
-            renderAll();
-          });
-        }, delay);
       }
 
       function sanitizeInputUrl(raw) {
@@ -2376,7 +2441,7 @@
         if (!rows.length) return [];
         if (typeof rows[0] === "object" && !Array.isArray(rows[0])) return rows;
 
-        // Trường hợp trả về mảng 2 chiều: [headers, ...values]
+        // TrÆ°á»ng há»£p tráº£ vá» máº£ng 2 chiá»u: [headers, ...values]
         if (Array.isArray(rows[0])) {
           const headers = rows[0].map((h) => String(h || "").trim());
           return rows.slice(1).map((r) => {
@@ -2396,7 +2461,7 @@
           const script = document.createElement("script");
           const timer = setTimeout(() => {
             cleanup();
-            reject(new Error("Timeout gọi Apps Script web app"));
+            reject(new Error("Timeout gá»i Apps Script web app"));
           }, 15000);
           function cleanup() {
             clearTimeout(timer);
@@ -2409,7 +2474,7 @@
           };
           script.onerror = () => {
             cleanup();
-            reject(new Error("Không tải được Apps Script endpoint"));
+            reject(new Error("KhÃ´ng táº£i Ä‘Æ°á»£c Apps Script endpoint"));
           };
           script.src = src;
           document.body.appendChild(script);
@@ -2417,7 +2482,7 @@
       }
 
       async function fetchRowsFromUrl(url) {
-        // Ưu tiên Apps Script Web App (/exec) để tránh CORS
+        // Æ¯u tiÃªn Apps Script Web App (/exec) Ä‘á»ƒ trÃ¡nh CORS
         if (url.includes("script.google.com") && (url.endsWith("/exec") || url.includes("/exec?"))) {
           return await loadFromWebAppJsonp(url);
         }
@@ -2435,7 +2500,7 @@
         const rows = await fetchRowsFromUrl(url);
         return normalizeRows(rows);
 
-        // Ưu tiên Apps Script Web App (/exec) để tránh CORS
+        // Æ¯u tiÃªn Apps Script Web App (/exec) Ä‘á»ƒ trÃ¡nh CORS
       }
 
       async function loadAdsFromInputUrl(urlRaw) {
@@ -2454,7 +2519,7 @@
           customerRows = aggregateCustomers(rawLeads);
           refreshLeadSourceFilter(customerRows);
           refreshStageFilter(customerRows);
-          dom.status.textContent = "Đang dùng dữ liệu mẫu cục bộ.";
+          dom.status.textContent = "Äang dÃ¹ng dá»¯ liá»‡u máº«u cá»¥c bá»™.";
           renderAll();
           return;
         }
@@ -2464,10 +2529,10 @@
           customerRows = aggregateCustomers(rawLeads);
           refreshLeadSourceFilter(customerRows);
           refreshStageFilter(customerRows);
-          dom.status.textContent = `Tải thành công ${rawLeads.length} lead records / ${customerRows.length} khách hàng | FB Ads: ${rawAdsRows.length} dòng lúc ${new Date().toLocaleString("vi-VN")}`;
+          dom.status.textContent = `Táº£i thÃ nh cÃ´ng ${rawLeads.length} lead records / ${customerRows.length} khÃ¡ch hÃ ng | FB Ads: ${rawAdsRows.length} dÃ²ng lÃºc ${new Date().toLocaleString("vi-VN")}`;
           renderAll();
         } catch (e) {
-          dom.status.textContent = `Lỗi tải dữ liệu: ${e.message}. Khuyên dùng Apps Script URL /exec.`;
+          dom.status.textContent = `Lá»—i táº£i dá»¯ liá»‡u: ${e.message}. KhuyÃªn dÃ¹ng Apps Script URL /exec.`;
         }
       }
 
@@ -2506,13 +2571,13 @@
         if (autoEnabled) {
           clearInterval(autoTimer);
           autoEnabled = false;
-          dom.toggleAutoBtn.textContent = "Bật auto-refresh";
+          dom.toggleAutoBtn.textContent = "Báº­t auto-refresh";
           return;
         }
         const sec = Math.max(10, Number(dom.refreshSec.value) || 60);
         autoTimer = setInterval(reloadData, sec * 1000);
         autoEnabled = true;
-        dom.toggleAutoBtn.textContent = "Tắt auto-refresh";
+        dom.toggleAutoBtn.textContent = "Táº¯t auto-refresh";
       }
 
       dom.loadBtn.addEventListener("click", reloadData);
@@ -2542,11 +2607,7 @@
         if (!key) return;
         handlePaidValueChange(key, target.value);
       });
-      [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => {
-        el.addEventListener("change", () => scheduleRenderAll(0));
-        el.addEventListener("input", () => scheduleRenderAll(120));
-      });
-      dom.trendToggles.forEach((el) => el.addEventListener("change", () => renderConversionTrendChart(getFilteredCustomers())));
+      [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => el.addEventListener("change", renderAll));
 
       const initParams = new URLSearchParams(window.location.search);
       applyConnectionPanelVisibility();
@@ -2556,11 +2617,9 @@
       if (initCsvUrl) dom.csvUrl.value = initCsvUrl;
       if (initAdsUrl) dom.adsUrl.value = initAdsUrl;
 
-      // Nếu không có query param thì dùng nguồn mặc định đã gắn sẵn.
       if (!dom.csvUrl.value.trim() && DEFAULT_CSV_URL) dom.csvUrl.value = DEFAULT_CSV_URL;
       if (!dom.adsUrl.value.trim() && DEFAULT_ADS_URL) dom.adsUrl.value = DEFAULT_ADS_URL;
 
-      // Khi đã có nguồn (query hoặc default) thì tự tải luôn để người xem không cần thao tác.
       if (dom.csvUrl.value.trim() || dom.adsUrl.value.trim()) {
         reloadData();
         if (!autoEnabled) toggleAutoRefresh();
@@ -2575,6 +2634,4 @@
     </script>
   </body>
 </html>
-
-
 
