@@ -1393,12 +1393,12 @@
             platforms: splitMulti(getValueByKeys(r, ["platforms", "Nền tảng"])),
             market: getValueByKeys(r, ["market", "Thị trường FF"]),
             note: getValueByKeys(r, ["note", "Note"]),
-            lastContact: parseDateFlexible(getValueByKeys(r, ["last_contact", "Last-time contact"]), true),
+            lastContact: parseDateFlexible(getValueByKeys(r, ["last_contact", "Last-time contact"])),
             conversion: getValueByKeys(r, ["conversion", "Conversion"]),
-            createdDate: parseDateFlexible(getValueByKeys(r, ["date_lead_created", "Date Lead Created"]), true),
+            createdDate: parseDateFlexible(getValueByKeys(r, ["date_lead_created", "Date Lead Created"])),
             daysToConvert: getValueByKeys(r, ["days_to_convert", "Số ngày chuyển đổi"]),
             leadClassification: getValueByKeys(r, ["lead_classification", "Phân loại lead"]),
-            paidDate: parseDateFlexible(getValueByKeys(r, ["paid_date", "Ngày chuyển đổi Paid"]), true),
+            paidDate: parseDateFlexible(getValueByKeys(r, ["paid_date", "Ngày chuyển đổi Paid"])),
             salesStatusFinal: getValueByKeys(r, ["sales_status_final", "Status từ Sales"]),
             barrier: getValueByKeys(r, ["barrier", "Rào cản"]),
             leadOwner: getValueByKeys(r, ["lead_owner", "Người tạo Leads"]),
@@ -1406,7 +1406,7 @@
             cac: toOptionalNumber(getValueByKeys(r, ["cac_usd", "CAC USD", "CAC (USD)", "CAC"])),
             roas: toOptionalNumber(getValueByKeys(r, ["roas", "ROAS", "ROAS (x)"])),
             ltv: toOptionalNumber(getValueByKeys(r, ["ltv_usd", "LTV USD", "LTV (USD)", "LTV"])),
-            revenue: toOptionalNumber(getValueByKeys(r, ["revenue_usd", "Revenue USD", "Doanh số (USD)"])),
+            revenue: toOptionalNumber(getValueByKeys(r, ["revenue_usd", "Revenue USD", "Doanh số (USD)", "Đơn đã Paid (USD)", "Don da Paid (USD)"])),
           };
           lead.customerKey = getValueByKeys(r, ["customer_key"]) || lead.customerId || lead.phone || lead.email || lead.leadId || `lead-${lead.id}`;
           lead.lifecycleStage = deriveLifecycleStage(lead);
