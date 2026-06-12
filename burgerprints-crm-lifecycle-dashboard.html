@@ -1766,7 +1766,7 @@
         const totalSpend = adsRows.reduce((sum, row) => sum + (row.spend || 0), 0);
         const leadCount = customers.length;
         const duplicateCount = customers.filter(isDuplicateCustomer).length;
-        const mqlCount = customers.filter(isMqlCustomer).length;
+        const mqlCount = Math.max(leadCount - duplicateCount, 0);
         const sqlCount = customers.filter(isSqlCustomer).length;
         const paidCount = paidCustomers.length;
         const paidValue = paidCustomers.reduce((sum, customer) => sum + (customer.revenue || 0), 0);
@@ -1910,7 +1910,7 @@
           const key = formatDate(customer.firstLeadDate);
           if (key === "-") return;
           const day = ensure(key);
-          if (isMqlCustomer(customer)) day.mql += 1;
+          if (!isDuplicateCustomer(customer)) day.mql += 1;
           if (isSqlCustomer(customer)) day.sql += 1;
         });
 
