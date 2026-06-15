@@ -783,17 +783,18 @@
   .b-dup { background: #C8CCD4; color: #2F3540; }
   .b-other { background: #EBECF0; color: #424956; }
 
-  .stage-select {
-    width: 100%;
-    min-width: 196px;
-    padding: 8px 9px;
-    border: 1px solid #c8d5eb;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
-    background: #fff;
-    color: #0f172a;
-  }
+      .stage-select {
+        width: 100%;
+        min-width: 196px;
+        padding: 8px 9px;
+        border: 1px solid #c8d5eb;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        background: #fff;
+        color: #0f172a;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.42), 0 1px 2px rgba(16,24,40,0.05);
+      }
 
   .stage-select option { font-weight: 700; }
 
@@ -1609,7 +1610,7 @@
           const passDate = day !== null && day >= startDay && day <= endDay;
           const passSource = source === "All" || c.leadSource === source;
           const passStage = stage === "All" || c.stage === stage;
-          return passDate && passSource && passStage && isPaidCustomer(c);
+          return passDate && passSource && passStage;
         });
       }
 
@@ -1712,6 +1713,11 @@
           const leadSalesStatus = normalizeText(lead.salesStatusFinal);
           return conversion.includes("paid") || leadSalesStatus.includes("paid") || Boolean(lead.paidDate) || lead.revenue > 0;
         });
+      }
+
+      function isPaidInCurrentRange(customer, startDay, endDay) {
+        const paidDay = toDayTime(customer.paidDate);
+        return paidDay !== null && paidDay >= startDay && paidDay <= endDay;
       }
 
       function fmtRatio(value) {
@@ -2063,31 +2069,30 @@
       }
 
       function getStageTone(stage) {
-        const tones = {
-          "Newbie tiá»m nÄƒng": { bg: "#4C9AFF", border: "#1D4ED8", color: "#FFFFFF" },
-          "Newbie Ä‘ang setup": { bg: "#F6E6D2", border: "#D4A373", color: "#5F4A33" },
-          "Tham kháº£o chung": { bg: "#DCECEB", border: "#84B7B3", color: "#325D5A" },
-          "SQL - Äang cÃ³ Ä‘Æ¡n": { bg: "#EB5B47", border: "#C63D2C", color: "#FFFFFF" },
-          "SQL - ÄÃ£ cÃ³ Ä‘Æ¡n TT khÃ¡c": { bg: "#E96D1F", border: "#BE5312", color: "#FFFFFF" },
-          "KH Ä‘ang Active": { bg: "#F2D45C", border: "#D1B03D", color: "#4A3D08" },
-          "Äang verify": { bg: "#CBEA8E", border: "#9EC65A", color: "#37510B" },
-          "KhÃ´ng liÃªn há»‡ Ä‘Æ°á»£c": { bg: "#D7DADF", border: "#B7BDC6", color: "#3D4048" },
-          "KhÃ´ng phÃ¹ há»£p/spam": { bg: "#6A717D", border: "#525864", color: "#FFFFFF" },
-          "TrÃ¹ng lead/ trÃ¹ng team": { bg: "#C8CCD4", border: "#A9AEB8", color: "#2F3540" },
-        };
-        return tones[stage] || { bg: "#EBECF0", border: "#D1D5DB", color: "#424956" };
+        const t = normalizeText(stage);
+        if (t.includes("sql") && t.includes("dang co don")) return { bg: "#EB5B47", border: "#C63D2C", color: "#FFFFFF" };
+        if (t.includes("sql") && (t.includes("tt khac") || t.includes("da co don"))) return { bg: "#E96D1F", border: "#BE5312", color: "#FFFFFF" };
+        if (t.includes("kh dang active") || t === "active") return { bg: "#F2D45C", border: "#D1B03D", color: "#4A3D08" };
+        if (t.includes("dang verify") || t.includes("verify")) return { bg: "#CBEA8E", border: "#9EC65A", color: "#37510B" };
+        if (t.includes("khong lien he")) return { bg: "#D7DADF", border: "#B7BDC6", color: "#3D4048" };
+        if (t.includes("khong phu hop") || t.includes("spam")) return { bg: "#6A717D", border: "#525864", color: "#FFFFFF" };
+        if (t.includes("trung lead")) return { bg: "#C8CCD4", border: "#A9AEB8", color: "#2F3540" };
+        if (t.includes("newbie") && t.includes("setup")) return { bg: "#F6E6D2", border: "#D4A373", color: "#5F4A33" };
+        if (t.includes("newbie")) return { bg: "#4C9AFF", border: "#1D4ED8", color: "#FFFFFF" };
+        if (t.includes("tham khao")) return { bg: "#DCECEB", border: "#84B7B3", color: "#325D5A" };
+        return { bg: "#EBECF0", border: "#D1D5DB", color: "#424956" };
       }
 
       function getSalesStatusTone(status) {
-        const tones = {
-          "KhÃ¡ch hÃ ng Ä‘Ã£ Paid": { bg: "#CBEA8E", border: "#9EC65A", color: "#37510B" },
-          "KhÃ´ng liÃªn há»‡ Ä‘Æ°á»£c": { bg: "#D7DADF", border: "#B7BDC6", color: "#3D4048" },
-          "KH Ä‘ang active": { bg: "#F2D45C", border: "#D1B03D", color: "#4A3D08" },
-          "ÄÃ£ tÆ° váº¥n Ä‘áº§y Ä‘á»§": { bg: "#DCECEB", border: "#84B7B3", color: "#325D5A" },
-          "Äang tÆ° váº¥n": { bg: "#DEEBFF", border: "#4C9AFF", color: "#0747A6" },
-          "TrÃ¹ng lead sale": { bg: "#C8CCD4", border: "#A9AEB8", color: "#2F3540" },
-        };
-        return tones[status] || { bg: "#EBECF0", border: "#D1D5DB", color: "#424956" };
+        const t = normalizeText(status);
+        if (t.includes("paid")) return { bg: "#CBEA8E", border: "#9EC65A", color: "#37510B" };
+        if (t.includes("da tu van")) return { bg: "#DCECEB", border: "#84B7B3", color: "#325D5A" };
+        if (t.includes("dang tu van") || t.includes("sales tiep nhan")) return { bg: "#DEEBFF", border: "#4C9AFF", color: "#0747A6" };
+        if (t.includes("khong lien he") || t.includes("tu choi") || t.includes("chua co dich vu")) return { bg: "#D7DADF", border: "#B7BDC6", color: "#3D4048" };
+        if (t.includes("kh dang active") || t.includes("kh dang active")) return { bg: "#F2D45C", border: "#D1B03D", color: "#4A3D08" };
+        if (t.includes("trung lead")) return { bg: "#C8CCD4", border: "#A9AEB8", color: "#2F3540" };
+        if (t.includes("newbie")) return { bg: "#4C9AFF", border: "#1D4ED8", color: "#FFFFFF" };
+        return { bg: "#EBECF0", border: "#D1D5DB", color: "#424956" };
       }
 
       function renderStageSelect(customer) {
@@ -2321,7 +2326,7 @@
         const periodCac = periodStats.values.costPaid;
 
         dom.customerTable.innerHTML = customers.map((c) => {
-          const paidInCurrentPeriod = isPaidCustomer(c) && toDayTime(c.paidDate) !== null && toDayTime(c.paidDate) >= startDay && toDayTime(c.paidDate) <= endDay;
+          const paidInCurrentPeriod = isPaidInCurrentRange(c, startDay, endDay);
           const displayCac = paidInCurrentPeriod ? periodCac : c.cac;
           const displayRoas = paidInCurrentPeriod && displayCac !== null && displayCac > 0 && c.revenue !== null ? c.revenue / displayCac : c.roas;
 
@@ -2368,7 +2373,7 @@
         const { startDay, endDay } = getFilterDateRange();
         const periodStats = calculateConversionStats(customers, getFilteredAdsRows(), getPaidCustomersInRange(startDay, endDay));
         const periodCac = periodStats.values.costPaid;
-        const paidInCurrentPeriod = isPaidCustomer(c) && toDayTime(c.paidDate) !== null && toDayTime(c.paidDate) >= startDay && toDayTime(c.paidDate) <= endDay;
+        const paidInCurrentPeriod = isPaidInCurrentRange(c, startDay, endDay);
         const displayCac = paidInCurrentPeriod ? periodCac : c.cac;
         const displayRoas = paidInCurrentPeriod && displayCac !== null && displayCac > 0 && c.revenue !== null ? c.revenue / displayCac : c.roas;
 
