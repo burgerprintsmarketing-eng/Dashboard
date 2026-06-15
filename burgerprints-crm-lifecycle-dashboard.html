@@ -1646,22 +1646,16 @@
         const periodStats = calculateConversionStats(customers, getFilteredAdsRows(), paidCustomers);
         const paid = periodStats.paidCount;
         const periodCac = periodStats.values.costPaid;
-        const avgRoas = (() => {
-          const arr = customers.map((x) => x.roas).filter((x) => x !== null);
-          if (!arr.length) return null;
-          return arr.reduce((a, b) => a + b, 0) / arr.length;
-        })();
-        const avgLtv = (() => {
-          const arr = customers.map((x) => x.ltv).filter((x) => x !== null);
-          if (!arr.length) return null;
-          return arr.reduce((a, b) => a + b, 0) / arr.length;
-        })();
+        const periodRoas = periodStats.totalSpend > 0 && periodStats.paidValue > 0
+          ? periodStats.paidValue / periodStats.totalSpend
+          : null;
+        const avgLtv = paid > 0 ? periodStats.paidValue / paid : null;
 
         const cards = [
           { title: "Tổng khách hàng", value: fmtNum(total), desc: `Tỷ lệ Paid: ${total > 0 ? fmtPct(paid / total) : "0.0%"}`, icon: "👥" },
           { title: "Khách hàng đã Paid", value: fmtNum(paid), desc: "Có status Paid, ngày Paid hoặc doanh thu", icon: "🧑‍💼" },
           { title: "CAC trung bình", value: fmtMoney(periodCac), desc: `${fmtMoney(periodStats.totalSpend)} / ${fmtNum(paid)} khách Paid trong kỳ`, icon: "🎯" },
-          { title: "ROAS trung bình", value: avgRoas === null ? "-" : fmtFloat(avgRoas), desc: `LTV / TE ${avgLtv === null ? "-" : fmtMoney(avgLtv)}`, icon: "📈" },
+          { title: "ROAS trung bình", value: periodRoas === null ? "-" : fmtFloat(periodRoas), desc: `${fmtMoney(periodStats.paidValue)} / ${fmtMoney(periodStats.totalSpend)} | LTV TB ${avgLtv === null ? "-" : fmtMoney(avgLtv)}`, icon: "📈" },
         ];
 
         dom.kpiCards.innerHTML = cards.map((c) => `
@@ -2099,12 +2093,13 @@
       function renderStageSelect(customer) {
         const stageOptions = [...FUNNEL_ORDER, ...Array.from(new Set(customerRows.map((x) => x.stage).filter(Boolean))).filter((s) => !FUNNEL_ORDER.includes(s)).sort()];
         const currentTone = getStageTone(customer.stage);
+        const customerKey = escapeAttr(customer.customerKey);
         const options = stageOptions.map((s) => {
           const tone = getStageTone(s);
           return `<option value="${s}" style="background:${tone.bg};color:${tone.color};" ${s === customer.stage ? "selected" : ""}>${s}</option>`;
         }).join("");
         return `
-          <select class="stage-select" data-customer-key="${customer.customerKey}" style="background:${currentTone.bg};border-color:${currentTone.border};color:${currentTone.color};">
+          <select class="stage-select" data-customer-key="${customerKey}" style="background:${currentTone.bg};border-color:${currentTone.border};color:${currentTone.color};">
             ${options}
           </select>
           ${stageSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Äang sync...</div>" : ""}
@@ -2127,6 +2122,7 @@
       function renderSalesStatusSelect(customer) {
         const options = getSalesStatusOptions();
         const currentTone = getSalesStatusTone(customer.salesStatusFinal);
+        const customerKey = escapeAttr(customer.customerKey);
         const html = [
           `<option value="" style="background:#EBECF0;color:#424956;" ${!customer.salesStatusFinal ? "selected" : ""}>-</option>`,
           ...options.map((s) => {
@@ -2135,7 +2131,7 @@
           }),
         ];
         return `
-          <select class="stage-select sales-status-select" data-customer-key="${customer.customerKey}" style="background:${currentTone.bg};border-color:${currentTone.border};color:${currentTone.color};">
+          <select class="stage-select sales-status-select" data-customer-key="${customerKey}" style="background:${currentTone.bg};border-color:${currentTone.border};color:${currentTone.color};">
             ${html.join("")}
           </select>
           ${salesStatusSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Äang sync...</div>" : ""}
@@ -2207,10 +2203,23 @@
         return leads;
       }
 
+      function applyPaidValueToState(customerKey, paidValue) {
+        const customer = customerRows.find((x) => x.customerKey === customerKey);
+        if (!customer) return null;
+        recalcCustomerFinancialsFromPaid(customer, paidValue);
+        if (Array.isArray(customer.leads)) {
+          customer.leads.forEach((lead) => recalcLeadFinancialsFromPaid(lead, paidValue));
+        }
+        rawLeads
+          .filter((lead) => lead.customerKey === customerKey)
+          .forEach((lead) => recalcLeadFinancialsFromPaid(lead, paidValue));
+        return customer;
+      }
+
       function renderPaidValueInput(customer) {
         return `
           <div>
-            <input class="paid-value-input" type="number" min="0" step="0.01" data-customer-key="${customer.customerKey}" value="${formatMoneyInput(customer.revenue)}" />
+            <input class="paid-value-input" type="text" inputmode="decimal" data-customer-key="${escapeAttr(customer.customerKey)}" value="${formatMoneyInput(customer.revenue)}" />
             ${paidValueSyncPending.has(customer.customerKey) ? "<div class='stage-sync-note'>Äang sync...</div>" : ""}
           </div>
         `;
@@ -2337,13 +2346,7 @@
         }
 
         setPaidValueOverride(customerKey, paidValue);
-        recalcCustomerFinancialsFromPaid(customer, paidValue);
-        if (Array.isArray(customer.leads)) {
-          customer.leads.forEach((l) => recalcLeadFinancialsFromPaid(l, paidValue));
-        }
-        rawLeads
-          .filter((l) => l.customerKey === customerKey)
-          .forEach((l) => recalcLeadFinancialsFromPaid(l, paidValue));
+        applyPaidValueToState(customerKey, paidValue);
 
         paidValueSyncPending.add(customerKey);
         renderAll();
@@ -2470,6 +2473,7 @@
         renderFunnel(filtered);
         renderKpis(filtered);
         renderAdsKpis();
+        renderConversionTrendChart(filtered);
         renderCustomerTable(filtered);
         renderCustomerSelector(filtered);
       }
@@ -2655,6 +2659,18 @@
           handleSalesStatusChange(key, target.value);
         }
       });
+      dom.customerTable.addEventListener("input", (ev) => {
+        const target = ev.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        if (!target.classList.contains("paid-value-input")) return;
+        const key = target.getAttribute("data-customer-key");
+        if (!key) return;
+        const rawValue = target.value.trim();
+        const paidValue = rawValue === "" ? null : parseLocalizedNumber(rawValue);
+        if (rawValue !== "" && paidValue === null) return;
+        setPaidValueOverride(key, paidValue);
+        applyPaidValueToState(key, paidValue);
+      });
       dom.customerTable.addEventListener("change", (ev) => {
         const target = ev.target;
         if (!(target instanceof HTMLInputElement)) return;
@@ -2664,6 +2680,7 @@
         handlePaidValueChange(key, target.value);
       });
       [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => el.addEventListener("change", renderAll));
+      dom.trendToggles.forEach((el) => el.addEventListener("change", () => renderConversionTrendChart(getFilteredCustomers())));
 
       const initParams = new URLSearchParams(window.location.search);
       applyConnectionPanelVisibility();
