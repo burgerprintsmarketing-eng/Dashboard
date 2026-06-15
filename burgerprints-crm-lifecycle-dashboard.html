@@ -1045,6 +1045,7 @@
       const DEFAULT_ADS_URL = "https://script.google.com/macros/s/AKfycbzNptnTxSHZuKwdDFEgLDhEqJhdbMLDsaKMoORqsDWUNNmStpY_ZifkDTlR2yxm5MHDsQ/exec";
       const DEFAULT_SYNC_URL = DEFAULT_CSV_URL;
       const SHOW_CONNECTION_PANEL = false;
+      const PAID_VALUE_OVERRIDES_KEY = "burgerprints_paid_value_overrides_v1";
       const SALES_STATUS_DEFAULTS = [
         "Khách hàng đã Paid",
         "Không liên hệ được",
@@ -2170,6 +2171,42 @@
         }
       }
 
+      function getPaidValueOverrides() {
+        try {
+          const raw = localStorage.getItem(PAID_VALUE_OVERRIDES_KEY);
+          const parsed = raw ? JSON.parse(raw) : {};
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+        } catch (_) {
+          return {};
+        }
+      }
+
+      function setPaidValueOverride(customerKey, paidValue) {
+        const key = String(customerKey || "").trim();
+        if (!key) return;
+        const overrides = getPaidValueOverrides();
+        overrides[key] = {
+          value: paidValue === null ? "" : Number(paidValue),
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(PAID_VALUE_OVERRIDES_KEY, JSON.stringify(overrides));
+      }
+
+      function applyPaidValueOverrides(leads) {
+        const overrides = getPaidValueOverrides();
+        if (!Object.keys(overrides).length) return leads;
+        leads.forEach((lead) => {
+          const override = overrides[lead.customerKey];
+          if (!override) return;
+          const paidValue = override.value === "" || override.value === null || override.value === undefined
+            ? null
+            : Number(override.value);
+          if (paidValue !== null && !Number.isFinite(paidValue)) return;
+          recalcLeadFinancialsFromPaid(lead, paidValue);
+        });
+        return leads;
+      }
+
       function renderPaidValueInput(customer) {
         return `
           <div>
@@ -2299,6 +2336,7 @@
           return;
         }
 
+        setPaidValueOverride(customerKey, paidValue);
         recalcCustomerFinancialsFromPaid(customer, paidValue);
         if (Array.isArray(customer.leads)) {
           customer.leads.forEach((l) => recalcLeadFinancialsFromPaid(l, paidValue));
@@ -2514,9 +2552,9 @@
 
       async function loadFromInputUrl(urlRaw) {
         const url = sanitizeInputUrl(urlRaw);
-        if (!url) return normalizeRows(SAMPLE_ROWS);
+        if (!url) return applyPaidValueOverrides(normalizeRows(SAMPLE_ROWS));
         const rows = await fetchRowsFromUrl(url);
-        return normalizeRows(rows);
+        return applyPaidValueOverrides(normalizeRows(rows));
 
         // Æ¯u tiÃªn Apps Script Web App (/exec) Ä‘á»ƒ trÃ¡nh CORS
       }
@@ -2532,7 +2570,7 @@
         const url = dom.csvUrl.value.trim();
         const adsUrl = dom.adsUrl.value.trim();
         if (!url && !adsUrl) {
-          rawLeads = normalizeRows(SAMPLE_ROWS);
+          rawLeads = applyPaidValueOverrides(normalizeRows(SAMPLE_ROWS));
           rawAdsRows = normalizeAdsRows(SAMPLE_ADS_ROWS);
           customerRows = aggregateCustomers(rawLeads);
           refreshLeadSourceFilter(customerRows);
@@ -2558,7 +2596,7 @@
         const url = dom.csvUrl.value.trim();
         const adsUrl = dom.adsUrl.value.trim();
         if (!url && !adsUrl) {
-          rawLeads = normalizeRows(SAMPLE_ROWS);
+          rawLeads = applyPaidValueOverrides(normalizeRows(SAMPLE_ROWS));
           rawAdsRows = normalizeAdsRows(SAMPLE_ADS_ROWS);
           customerRows = aggregateCustomers(rawLeads);
           refreshLeadSourceFilter(customerRows);
@@ -2642,7 +2680,7 @@
         reloadData();
         if (!autoEnabled) toggleAutoRefresh();
       } else {
-        rawLeads = normalizeRows(SAMPLE_ROWS);
+        rawLeads = applyPaidValueOverrides(normalizeRows(SAMPLE_ROWS));
         rawAdsRows = normalizeAdsRows(SAMPLE_ADS_ROWS);
         customerRows = aggregateCustomers(rawLeads);
         refreshLeadSourceFilter(customerRows);
