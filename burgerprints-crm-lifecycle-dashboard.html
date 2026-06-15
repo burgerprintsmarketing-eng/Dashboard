@@ -1640,12 +1640,10 @@
       function renderKpis(customers) {
         const total = customers.length;
         const { startDay, endDay } = getFilterDateRange();
-        const paid = getPaidCustomersInRange(startDay, endDay).length;
-        const avgCac = (() => {
-          const arr = customers.map((x) => x.cac).filter((x) => x !== null);
-          if (!arr.length) return null;
-          return arr.reduce((a, b) => a + b, 0) / arr.length;
-        })();
+        const paidCustomers = getPaidCustomersInRange(startDay, endDay);
+        const periodStats = calculateConversionStats(customers, getFilteredAdsRows(), paidCustomers);
+        const paid = periodStats.paidCount;
+        const periodCac = periodStats.values.costPaid;
         const avgRoas = (() => {
           const arr = customers.map((x) => x.roas).filter((x) => x !== null);
           if (!arr.length) return null;
@@ -1660,7 +1658,7 @@
         const cards = [
           { title: "Tổng khách hàng", value: fmtNum(total), desc: `Tỷ lệ Paid: ${total > 0 ? fmtPct(paid / total) : "0.0%"}`, icon: "👥" },
           { title: "Khách hàng đã Paid", value: fmtNum(paid), desc: "Có status Paid, ngày Paid hoặc doanh thu", icon: "🧑‍💼" },
-          { title: "CAC trung bình", value: avgCac === null ? "-" : fmtMoney(avgCac), desc: "Theo khách có dữ liệu CAC", icon: "🎯" },
+          { title: "CAC trung bình", value: fmtMoney(periodCac), desc: `${fmtMoney(periodStats.totalSpend)} / ${fmtNum(paid)} khách Paid trong kỳ`, icon: "🎯" },
           { title: "ROAS trung bình", value: avgRoas === null ? "-" : fmtFloat(avgRoas), desc: `LTV / TE ${avgLtv === null ? "-" : fmtMoney(avgLtv)}`, icon: "📈" },
         ];
 
@@ -1870,7 +1868,7 @@
           },
           { type: "cost", tone: "cost", label: "Chi phí ra 1 MQL", key: "costMql", value: fmtMoney(currentStats.values.costMql), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.mqlCount)} MQL` },
           { type: "cost", tone: "cost", label: "Chi phí ra 1 SQL", key: "costSql", value: fmtMoney(currentStats.values.costSql), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.sqlCount)} SQL` },
-          { type: "cost", tone: "cost", label: "Chi phí ra 1 Paid", key: "costPaid", value: fmtMoney(currentStats.values.costPaid), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.paidCount)} Paid` },
+          { type: "cost", tone: "cost", label: "CAC / Chi phí ra 1 Paid", key: "costPaid", value: fmtMoney(currentStats.values.costPaid), note: `${fmtMoney(currentStats.totalSpend)} / ${fmtNum(currentStats.paidCount)} khách Paid` },
           { type: "rate", tone: "rate", label: "SQL/Lead", key: "sqlLead", value: fmtRatio(currentStats.values.sqlLead), note: `${fmtNum(currentStats.sqlCount)} / ${fmtNum(currentStats.leadCount)}` },
         ];
 
@@ -2318,26 +2316,36 @@
       }
 
       function renderCustomerTable(customers) {
-        dom.customerTable.innerHTML = customers.map((c) => `
-          <tr>
-            <td class="left"><a class="customer-link" href="${buildCustomerDetailUrl(c.customerKey)}">${c.fullName}</a></td>
-            <td>${c.customerId || "-"}</td>
-            <td>${c.phone || "-"}</td>
-            <td>${c.leadSource || "-"}</td>
-            <td>${fmtNum(c.leadCount)}</td>
-            <td>${renderStageSelect(c)}</td>
-            <td>${renderSalesStatusSelect(c)}</td>
-            <td>${renderPaidValueInput(c)}</td>
-            <td>${formatDate(c.firstLeadDate)}</td>
-            <td>${formatDate(c.paidDate)}</td>
-            <td>${c.paidConversionDays === null ? "-" : `${fmtNum(c.paidConversionDays)} ngày`}</td>
-            <td>${c.activeDays === null ? "-" : `${fmtNum(c.activeDays)} ngày`}</td>
-            <td>${formatDate(c.lastContact)}</td>
-            <td>${fmtMoney(c.cac)}</td>
-            <td>${fmtFloat(c.roas)}</td>
-            <td>${fmtMoney(c.ltv)}</td>
-          </tr>
-        `).join("");
+        const { startDay, endDay } = getFilterDateRange();
+        const periodStats = calculateConversionStats(customers, getFilteredAdsRows(), getPaidCustomersInRange(startDay, endDay));
+        const periodCac = periodStats.values.costPaid;
+
+        dom.customerTable.innerHTML = customers.map((c) => {
+          const paidInCurrentPeriod = isPaidCustomer(c) && toDayTime(c.paidDate) !== null && toDayTime(c.paidDate) >= startDay && toDayTime(c.paidDate) <= endDay;
+          const displayCac = paidInCurrentPeriod ? periodCac : c.cac;
+          const displayRoas = paidInCurrentPeriod && displayCac !== null && displayCac > 0 && c.revenue !== null ? c.revenue / displayCac : c.roas;
+
+          return `
+            <tr>
+              <td class="left"><a class="customer-link" href="${buildCustomerDetailUrl(c.customerKey)}">${c.fullName}</a></td>
+              <td>${c.customerId || "-"}</td>
+              <td>${c.phone || "-"}</td>
+              <td>${c.leadSource || "-"}</td>
+              <td>${fmtNum(c.leadCount)}</td>
+              <td>${renderStageSelect(c)}</td>
+              <td>${renderSalesStatusSelect(c)}</td>
+              <td>${renderPaidValueInput(c)}</td>
+              <td>${formatDate(c.firstLeadDate)}</td>
+              <td>${formatDate(c.paidDate)}</td>
+              <td>${c.paidConversionDays === null ? "-" : `${fmtNum(c.paidConversionDays)} ngày`}</td>
+              <td>${c.activeDays === null ? "-" : `${fmtNum(c.activeDays)} ngày`}</td>
+              <td>${formatDate(c.lastContact)}</td>
+              <td>${fmtMoney(displayCac)}</td>
+              <td>${fmtFloat(displayRoas)}</td>
+              <td>${fmtMoney(c.ltv)}</td>
+            </tr>
+          `;
+        }).join("");
       }
 
       function renderCustomerSelector(customers) {
@@ -2357,6 +2365,12 @@
         const key = dom.customerSelect.value || customers[0].customerKey;
         const c = customers.find((x) => x.customerKey === key) || customers[0];
         dom.customerSelect.value = c.customerKey;
+        const { startDay, endDay } = getFilterDateRange();
+        const periodStats = calculateConversionStats(customers, getFilteredAdsRows(), getPaidCustomersInRange(startDay, endDay));
+        const periodCac = periodStats.values.costPaid;
+        const paidInCurrentPeriod = isPaidCustomer(c) && toDayTime(c.paidDate) !== null && toDayTime(c.paidDate) >= startDay && toDayTime(c.paidDate) <= endDay;
+        const displayCac = paidInCurrentPeriod ? periodCac : c.cac;
+        const displayRoas = paidInCurrentPeriod && displayCac !== null && displayCac > 0 && c.revenue !== null ? c.revenue / displayCac : c.roas;
 
         dom.customerSummary.innerHTML = `
           <div class="card">
@@ -2364,7 +2378,7 @@
             <p>Stage hiá»‡n táº¡i: ${stageBadge(c.stage)}</p>
             <p>Lead source: <strong>${c.leadSource || "-"}</strong></p>
             <p>Sá»‘ lead records: <strong>${fmtNum(c.leadCount)}</strong></p>
-            <p>CAC: <strong>${fmtMoney(c.cac)}</strong> | ROAS: <strong>${fmtFloat(c.roas)}</strong> | LTV: <strong>${fmtMoney(c.ltv)}</strong></p>
+            <p>CAC: <strong>${fmtMoney(displayCac)}</strong> | ROAS: <strong>${fmtFloat(displayRoas)}</strong> | LTV: <strong>${fmtMoney(c.ltv)}</strong></p>
             <p>Lead Ä‘áº§u: <strong>${formatDate(c.firstLeadDate)}</strong> | Contact gáº§n nháº¥t: <strong>${formatDate(c.lastContact)}</strong></p>
           </div>
         `;
