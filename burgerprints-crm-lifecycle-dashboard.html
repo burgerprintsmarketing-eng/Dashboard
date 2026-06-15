@@ -742,6 +742,15 @@
 
   .side-col .panel + .panel { margin-top: 10px; }
 
+  .customer-table-panel {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .customer-table-panel .table-wrap {
+    width: 100%;
+  }
+
   #customerSummary .card {
     border: 1px solid #d8e4f2;
     border-radius: 10px;
@@ -920,34 +929,6 @@
             <div id="conversionTrendChart" class="trend-chart"></div>
           </div>
 
-          <div class="panel section">
-            <h2>Bảng khách hàng tổng hợp</h2>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th class="left">Khách hàng</th>
-                    <th>Customer ID</th>
-                    <th>SĐT</th>
-                    <th>Nguồn lead</th>
-                    <th>Leads</th>
-                    <th>Stage</th>
-                    <th>Status từ Sales</th>
-                    <th>Đơn đã Paid (USD)</th>
-                    <th>Lead đầu</th>
-                    <th>Ngày Paid</th>
-                    <th>Thời gian chuyển đổi Paid</th>
-                    <th>Thời gian Active</th>
-                    <th>Contact gần nhất</th>
-                    <th>CAC</th>
-                    <th>ROAS</th>
-                    <th>LTV</th>
-                  </tr>
-                </thead>
-                <tbody id="customerTable"></tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
         <div class="side-col">
@@ -984,6 +965,35 @@
             </div>
           </div>
         </div>
+      <div class="panel section customer-table-panel">
+                  <h2>Bảng khách hàng tổng hợp</h2>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th class="left">Khách hàng</th>
+                          <th>Customer ID</th>
+                          <th>SĐT</th>
+                          <th>Nguồn lead</th>
+                          <th>Leads</th>
+                          <th>Stage</th>
+                          <th>Status từ Sales</th>
+                          <th>Đơn đã Paid (USD)</th>
+                          <th>Lead đầu</th>
+                          <th>Ngày Paid</th>
+                          <th>Thời gian chuyển đổi Paid</th>
+                          <th>Thời gian Active</th>
+                          <th>Contact gần nhất</th>
+                          <th>CAC</th>
+                          <th>ROAS</th>
+                          <th>LTV</th>
+                        </tr>
+                      </thead>
+                      <tbody id="customerTable"></tbody>
+                    </table>
+                  </div>
+                </div>
+      
       </div>
     </div>
 
@@ -2707,4 +2717,5 @@
     </script>
   </body>
 </html>
+
 
