@@ -2413,7 +2413,7 @@
 
       function renderCustomerDetail(customers) {
         if (!customers.length) {
-          dom.customerSummary.innerHTML = "<div class='card'><p>KhÃ´ng cÃ³ dá»¯ liá»‡u khÃ¡ch hÃ ng.</p></div>";
+          dom.customerSummary.innerHTML = "<div class='card'><p>Không có dữ liệu khách hàng.</p></div>";
           dom.customerTimeline.innerHTML = "";
           return;
         }
@@ -2431,19 +2431,19 @@
         dom.customerSummary.innerHTML = `
           <div class="card">
             <div class="title">${c.fullName} ${c.customerId ? `- ${c.customerId}` : ""}</div>
-            <p>Stage hiá»‡n táº¡i: ${stageBadge(c.stage)}</p>
+            <p>Stage hiện tại: ${stageBadge(c.stage)}</p>
             <p>Lead source: <strong>${c.leadSource || "-"}</strong></p>
-            <p>Sá»‘ lead records: <strong>${fmtNum(c.leadCount)}</strong></p>
+            <p>Số lead records: <strong>${fmtNum(c.leadCount)}</strong></p>
             <p>CAC: <strong>${fmtMoney(displayCac)}</strong> | ROAS: <strong>${fmtFloat(displayRoas)}</strong> | LTV: <strong>${fmtMoney(c.ltv)}</strong></p>
-            <p>Lead Ä‘áº§u: <strong>${formatDate(c.firstLeadDate)}</strong> | Contact gáº§n nháº¥t: <strong>${formatDate(c.lastContact)}</strong></p>
+            <p>Lead đầu: <strong>${formatDate(c.firstLeadDate)}</strong> | Contact gần nhất: <strong>${formatDate(c.lastContact)}</strong></p>
           </div>
         `;
 
         const timelineItems = [];
         c.leads.forEach((l) => {
           if (l.createdDate) timelineItems.push({ date: l.createdDate, title: "Lead created", sub: `Lead ID: ${l.leadId || "-"} | Source: ${l.leadSource || "-"}` });
-          if (l.consultingStatus) timelineItems.push({ date: l.createdDate || l.lastContact, title: "Contacted", sub: `Tráº¡ng thÃ¡i tÆ° váº¥n: ${l.consultingStatus}` });
-          if (String(l.leadClassification || "").toLowerCase().includes("sql")) timelineItems.push({ date: l.createdDate || l.lastContact, title: "SQL", sub: `PhÃ¢n loáº¡i lead: ${l.leadClassification}` });
+          if (l.consultingStatus) timelineItems.push({ date: l.createdDate || l.lastContact, title: "Contacted", sub: `Trạng thái tư vấn: ${l.consultingStatus}` });
+          if (String(l.leadClassification || "").toLowerCase().includes("sql")) timelineItems.push({ date: l.createdDate || l.lastContact, title: "SQL", sub: `Phân loại lead: ${l.leadClassification}` });
           if (l.paidDate || String(l.conversion || "").toLowerCase().includes("paid")) timelineItems.push({ date: l.paidDate || l.lastContact || l.createdDate, title: "Paid", sub: `Conversion: ${l.conversion || "Paid"}` });
           if (l.lastContact) timelineItems.push({ date: l.lastContact, title: "Last contact", sub: `${l.salesStatusFinal || l.note || "-"}` });
         });
@@ -2457,22 +2457,22 @@
                 <div class="t-sub">${t.sub}</div>
               </div>
             `).join("")
-          : "<div class='timeline-item'><div class='t-sub'>ChÆ°a cÃ³ timeline cho khÃ¡ch hÃ ng nÃ y.</div></div>";
+          : "<div class='timeline-item'><div class='t-sub'>Chưa có timeline cho khách hàng này.</div></div>";
       }
 
-      // Override stage badge theo bá»™ phÃ¢n loáº¡i má»›i
+      // Override stage badge theo bộ phân loại mới
       function stageBadge(stage) {
         const clsMap = {
-          "Newbie tiá»m nÄƒng": "b-newbie-pot",
-          "Newbie Ä‘ang setup": "b-newbie-setup",
-          "Tham kháº£o chung": "b-research",
-          "SQL - Äang cÃ³ Ä‘Æ¡n": "b-sql-order",
-          "SQL - ÄÃ£ cÃ³ Ä‘Æ¡n TT khÃ¡c": "b-sql-other",
-          "KH Ä‘ang Active": "b-active-kh",
-          "Äang verify": "b-verify",
-          "KhÃ´ng liÃªn há»‡ Ä‘Æ°á»£c": "b-unreach",
-          "KhÃ´ng phÃ¹ há»£p/spam": "b-spam",
-          "TrÃ¹ng lead/ trÃ¹ng team": "b-dup",
+          "Newbie tiềm năng": "b-newbie-pot",
+          "Newbie đang setup": "b-newbie-setup",
+          "Tham khảo chung": "b-research",
+          "SQL - Đang có đơn": "b-sql-order",
+          "SQL - Đã có đơn TT khác": "b-sql-other",
+          "KH đang Active": "b-active-kh",
+          "Đang verify": "b-verify",
+          "Không liên hệ được": "b-unreach",
+          "Không phù hợp/spam": "b-spam",
+          "Trùng lead/ trùng team": "b-dup",
         };
         const cls = clsMap[stage] || "b-other";
         return `<span class="badge ${cls}">${stage || "-"}</span>`;
