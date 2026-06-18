@@ -2852,7 +2852,8 @@
         }
       }
 
-      async function reloadData() {
+      async function reloadData(options = {}) {
+        const resetDateRange = options.resetDateRange !== false;
         const url = dom.csvUrl.value.trim();
         const adsUrl = dom.adsUrl.value.trim();
         if (!url && !adsUrl) {
@@ -2861,6 +2862,8 @@
           customerRows = aggregateCustomers(rawLeads);
           refreshLeadSourceFilter(customerRows);
           refreshStageFilter(customerRows);
+          if (resetDateRange) applyDefaultLatestDateRange(true);
+          paidTrackingExpanded = false;
           dom.status.textContent = "Dang dung du lieu mau cuc bo.";
           renderAll();
           return;
@@ -2871,6 +2874,8 @@
           customerRows = aggregateCustomers(rawLeads);
           refreshLeadSourceFilter(customerRows);
           refreshStageFilter(customerRows);
+          if (resetDateRange) applyDefaultLatestDateRange(true);
+          paidTrackingExpanded = false;
           const adsConv = rawAdsRows.reduce((s, r) => s + (Number(r.conversions) || 0), 0);
           let statusMsg = `Tai thanh cong ${rawLeads.length} lead records / ${customerRows.length} khach hang | FB Ads: ${rawAdsRows.length} dong, Conversions parse: ${fmtNum(adsConv)} luc ${new Date().toLocaleString("vi-VN")}`;
           if (adsUrl && rawAdsRows.length === 0) {
@@ -2891,12 +2896,12 @@
           return;
         }
         const sec = Math.max(10, Number(dom.refreshSec.value) || 60);
-        autoTimer = setInterval(reloadData, sec * 1000);
+        autoTimer = setInterval(() => reloadData({ resetDateRange: false }), sec * 1000);
         autoEnabled = true;
         dom.toggleAutoBtn.textContent = "Táº¯t auto-refresh";
       }
 
-      dom.loadBtn.addEventListener("click", reloadData);
+      dom.loadBtn.addEventListener("click", () => reloadData({ resetDateRange: true }));
       dom.toggleAutoBtn.addEventListener("click", toggleAutoRefresh);
       window.addEventListener("resize", placeFilterPanelForViewport);
       dom.customerSelect.addEventListener("change", () => renderCustomerDetail(getFilteredCustomers()));
@@ -2960,7 +2965,7 @@
       if (!dom.adsUrl.value.trim() && DEFAULT_ADS_URL) dom.adsUrl.value = DEFAULT_ADS_URL;
 
       if (dom.csvUrl.value.trim() || dom.adsUrl.value.trim()) {
-        reloadData();
+        reloadData({ resetDateRange: true });
         if (!autoEnabled) toggleAutoRefresh();
       } else {
         rawLeads = applyPaidValueOverrides(normalizeRows(SAMPLE_ROWS));
@@ -2968,6 +2973,8 @@
         customerRows = aggregateCustomers(rawLeads);
         refreshLeadSourceFilter(customerRows);
         refreshStageFilter(customerRows);
+        applyDefaultLatestDateRange(true);
+        paidTrackingExpanded = false;
         renderAll();
       }
     </script>
