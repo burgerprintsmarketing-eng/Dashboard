@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -447,6 +447,29 @@
     padding: 14px;
     font-size: 13px;
     font-weight: 800;
+  }
+
+  .paid-tracking-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .paid-toggle-btn {
+    border: 1px solid #bcd4fb;
+    background: linear-gradient(180deg, #fff 0%, #eef5ff 100%);
+    color: #1d66e2;
+    border-radius: 999px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(29, 102, 226, 0.12);
+  }
+
+  .paid-toggle-btn:hover {
+    border-color: #7aa9f7;
+    background: #eaf2ff;
   }
   .layout-grid {
     display: grid;
@@ -1015,6 +1038,9 @@
         <p class="paid-tracking-sub">Theo Ngày Paid trong bộ lọc. Khách tạo lead từ kỳ trước vẫn được tính nếu Paid trong kỳ hiện tại.</p>
         <div id="paidSourceSummary" class="paid-source-summary"></div>
         <div id="paidCustomerList" class="paid-customer-list"></div>
+        <div id="paidTrackingActions" class="paid-tracking-actions">
+          <button id="paidTrackingToggle" class="paid-toggle-btn" type="button">Xem thêm</button>
+        </div>
       </div>
 
       <div class="section kpi-section">
@@ -1397,6 +1423,32 @@
           end = lastDayOfMonth(start.getFullYear(), start.getMonth());
         }
         return { start, end, startDay: toDayTime(start), endDay: toDayTime(end) };
+      }
+
+      function getLatestAvailableDate() {
+        const times = [];
+        customerRows.forEach((customer) => {
+          [customer.paidDate, customer.firstLeadDate, customer.lastContact].forEach((date) => {
+            const time = toDayTime(date);
+            if (time !== null) times.push(time);
+          });
+        });
+        rawAdsRows.forEach((row) => {
+          const time = toDayTime(row.date);
+          if (time !== null) times.push(time);
+        });
+        if (!times.length) return null;
+        return new Date(Math.max(...times));
+      }
+
+      function applyDefaultLatestDateRange(force = false) {
+        if (!force && userTouchedDateFilter) return;
+        const latest = getLatestAvailableDate();
+        if (!latest) return;
+        const start = new Date(latest);
+        start.setDate(start.getDate() - 6);
+        dom.filterStartDate.value = formatDate(start);
+        dom.filterEndDate.value = formatDate(latest);
       }
 
       function splitMulti(v) {
@@ -2612,6 +2664,7 @@
         if (!paidCustomers.length) {
           dom.paidSourceSummary.innerHTML = "";
           dom.paidCustomerList.innerHTML = "<div class='paid-empty'>Chưa có khách Paid theo Ngày Paid trong bộ lọc hiện tại.</div>";
+          if (dom.paidTrackingToggle) dom.paidTrackingToggle.style.display = "none";
           return;
         }
 
@@ -2636,7 +2689,10 @@
 
         const periodStats = calculateConversionStats(getFilteredCustomers(), getFilteredAdsRows(), paidCustomers);
         const periodCac = periodStats.values.costPaid;
-        dom.paidCustomerList.innerHTML = paidCustomers.map((customer) => {
+        const visibleLimit = 6;
+        const visiblePaidCustomers = paidTrackingExpanded ? paidCustomers : paidCustomers.slice(0, visibleLimit);
+        const hiddenPaidCount = Math.max(0, paidCustomers.length - visibleLimit);
+        dom.paidCustomerList.innerHTML = visiblePaidCustomers.map((customer) => {
           const roas = periodCac !== null && periodCac > 0 && customer.revenue !== null ? customer.revenue / periodCac : customer.roas;
           return `
             <div class="paid-customer-card">
@@ -2658,6 +2714,14 @@
             </div>
           `;
         }).join("");
+
+        if (dom.paidTrackingToggle) {
+          dom.paidTrackingToggle.style.display = hiddenPaidCount > 0 ? "inline-flex" : "none";
+          dom.paidTrackingToggle.textContent = paidTrackingExpanded
+            ? "Thu gọn danh sách ↑"
+            : `Xem thêm ${hiddenPaidCount} khách Paid ↓`;
+          dom.paidTrackingToggle.setAttribute("aria-expanded", paidTrackingExpanded ? "true" : "false");
+        }
       }
       function renderAll() {
         const filtered = getFilteredCustomers();
@@ -2871,7 +2935,17 @@
         if (!key) return;
         handlePaidValueChange(key, target.value);
       });
-      [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => el.addEventListener("change", renderAll));
+      [dom.filterStartDate, dom.filterEndDate, dom.filterLeadSource, dom.filterStage].forEach((el) => el.addEventListener("change", () => {
+        if (el === dom.filterStartDate || el === dom.filterEndDate) userTouchedDateFilter = true;
+        paidTrackingExpanded = false;
+        renderAll();
+      }));
+      if (dom.paidTrackingToggle) {
+        dom.paidTrackingToggle.addEventListener("click", () => {
+          paidTrackingExpanded = !paidTrackingExpanded;
+          renderPaidTracking();
+        });
+      }
       dom.trendToggles.forEach((el) => el.addEventListener("change", () => renderConversionTrendChart(getFilteredCustomers())));
 
       const initParams = new URLSearchParams(window.location.search);
