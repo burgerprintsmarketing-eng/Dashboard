@@ -335,6 +335,112 @@
   #kpiCards .metric-card:nth-child(4),
   #adsKpiCards .metric-card:nth-child(4) { background: linear-gradient(132deg, #4f63e9, #3f7df5); }
 
+  .paid-tracking-panel h2 {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  .paid-tracking-sub {
+    margin: 0 0 12px;
+    color: #667085;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .paid-source-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .paid-source-card {
+    border: 1px solid #cfe0f7;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+    padding: 11px 12px;
+    box-shadow: 0 8px 18px rgba(21, 70, 140, 0.06);
+  }
+
+  .paid-source-name {
+    color: #344054;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .paid-source-value {
+    margin-top: 5px;
+    color: #155ccb;
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 900;
+  }
+
+  .paid-source-meta {
+    margin-top: 5px;
+    color: #667085;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .paid-customer-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .paid-customer-card {
+    border: 1px solid #d8e5f7;
+    border-radius: 12px;
+    background: #fff;
+    padding: 11px 12px;
+    box-shadow: 0 8px 18px rgba(21, 70, 140, 0.05);
+  }
+
+  .paid-customer-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .paid-customer-name {
+    color: #0f1f46;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1.25;
+  }
+
+  .paid-customer-id {
+    color: #667085;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .paid-customer-money {
+    color: #16a34a;
+    font-size: 16px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .paid-customer-meta {
+    color: #344054;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .paid-empty {
+    border: 1px dashed #cfe0f7;
+    border-radius: 12px;
+    background: #f8fbff;
+    color: #667085;
+    padding: 14px;
+    font-size: 13px;
+    font-weight: 800;
+  }
   .layout-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 390px;
@@ -836,6 +942,7 @@
     .grid-3 { grid-template-columns: 1fr; }
     .funnel-rows { grid-template-columns: repeat(10, minmax(132px, 150px)); }
     .transition { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .paid-source-summary, .paid-customer-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   @media (max-width: 760px) {
@@ -844,6 +951,7 @@
     h2, .kpi-section h2, .controls-panel h2, .filter-panel h2, .panel > h2 { font-size: 25px; }
     .head-actions { display: none; }
     .kpis, .transition, .grid-4, .grid-2 { grid-template-columns: 1fr; }
+    .paid-source-summary, .paid-customer-list { grid-template-columns: 1fr; }
     .funnel-rows { grid-template-columns: repeat(10, minmax(128px, 142px)); min-width: 1280px; }
     .funnel-row { min-height: 132px; padding: 9px; }
     .funnel-count { font-size: 26px; }
@@ -893,6 +1001,13 @@
       <div class="section kpi-section">
         <h2>KPI khách hàng</h2>
         <div id="kpiCards" class="kpis"></div>
+      </div>
+
+      <div class="panel section paid-tracking-panel">
+        <h2>Nguồn khách Paid trong kỳ</h2>
+        <p class="paid-tracking-sub">Theo Ngày Paid trong bộ lọc. Khách tạo lead từ kỳ trước vẫn được tính nếu Paid trong kỳ hiện tại.</p>
+        <div id="paidSourceSummary" class="paid-source-summary"></div>
+        <div id="paidCustomerList" class="paid-customer-list"></div>
       </div>
 
       <div class="section kpi-section">
@@ -1100,6 +1215,8 @@
         conversionTrendChart: document.getElementById("conversionTrendChart"),
         trendToggles: Array.from(document.querySelectorAll(".trend-toggle")),
         kpiCards: document.getElementById("kpiCards"),
+        paidSourceSummary: document.getElementById("paidSourceSummary"),
+        paidCustomerList: document.getElementById("paidCustomerList"),
         adsKpiCards: document.getElementById("adsKpiCards"),
         customerSelect: document.getElementById("customerSelect"),
         customerSummary: document.getElementById("customerSummary"),
@@ -2478,10 +2595,68 @@
         return `<span class="badge ${cls}">${stage || "-"}</span>`;
       }
 
+      function renderPaidTracking() {
+        if (!dom.paidSourceSummary || !dom.paidCustomerList) return;
+        const { startDay, endDay } = getFilterDateRange();
+        const paidCustomers = getPaidCustomersInRange(startDay, endDay)
+          .slice()
+          .sort((a, b) => (toDayTime(b.paidDate) || 0) - (toDayTime(a.paidDate) || 0));
+
+        if (!paidCustomers.length) {
+          dom.paidSourceSummary.innerHTML = "";
+          dom.paidCustomerList.innerHTML = "<div class='paid-empty'>Chưa có khách Paid theo Ngày Paid trong bộ lọc hiện tại.</div>";
+          return;
+        }
+
+        const bySource = new Map();
+        paidCustomers.forEach((customer) => {
+          const source = customer.leadSource || "Không rõ nguồn";
+          if (!bySource.has(source)) bySource.set(source, { source, count: 0, revenue: 0 });
+          const item = bySource.get(source);
+          item.count += 1;
+          item.revenue += customer.revenue || 0;
+        });
+
+        dom.paidSourceSummary.innerHTML = Array.from(bySource.values())
+          .sort((a, b) => b.count - a.count || b.revenue - a.revenue)
+          .map((item) => `
+            <div class="paid-source-card">
+              <div class="paid-source-name">${escapeAttr(item.source)}</div>
+              <div class="paid-source-value">${fmtNum(item.count)}</div>
+              <div class="paid-source-meta">${fmtPct(item.count / paidCustomers.length)} Paid | Giá trị ${fmtMoney(item.revenue)}</div>
+            </div>
+          `).join("");
+
+        const periodStats = calculateConversionStats(getFilteredCustomers(), getFilteredAdsRows(), paidCustomers);
+        const periodCac = periodStats.values.costPaid;
+        dom.paidCustomerList.innerHTML = paidCustomers.map((customer) => {
+          const roas = periodCac !== null && periodCac > 0 && customer.revenue !== null ? customer.revenue / periodCac : customer.roas;
+          return `
+            <div class="paid-customer-card">
+              <div class="paid-customer-top">
+                <div>
+                  <div class="paid-customer-name">${escapeAttr(customer.fullName)}</div>
+                  <div class="paid-customer-id">${customer.customerId ? escapeAttr(customer.customerId) : "-"}</div>
+                </div>
+                <div class="paid-customer-money">${fmtMoney(customer.revenue)}</div>
+              </div>
+              <div class="paid-customer-meta">
+                Nguồn: <strong>${escapeAttr(customer.leadSource || "-")}</strong><br />
+                Stage: ${stageBadge(customer.stage)}<br />
+                Status Sales: <strong>${escapeAttr(customer.salesStatusFinal || "-")}</strong><br />
+                Lead đầu: <strong>${formatDate(customer.firstLeadDate)}</strong> | Paid: <strong>${formatDate(customer.paidDate)}</strong><br />
+                Contact gần nhất: <strong>${formatDate(customer.lastContact)}</strong><br />
+                CAC kỳ: <strong>${fmtMoney(periodCac)}</strong> | ROAS: <strong>${fmtFloat(roas)}</strong> | LTV: <strong>${fmtMoney(customer.ltv)}</strong>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
       function renderAll() {
         const filtered = getFilteredCustomers();
         renderFunnel(filtered);
         renderKpis(filtered);
+        renderPaidTracking();
         renderAdsKpis();
         renderConversionTrendChart(filtered);
         renderCustomerTable(filtered);
@@ -2717,5 +2892,9 @@
     </script>
   </body>
 </html>
+
+
+
+
 
 
