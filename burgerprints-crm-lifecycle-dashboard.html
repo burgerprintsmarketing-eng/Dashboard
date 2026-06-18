@@ -1445,8 +1445,13 @@
         if (!force && userTouchedDateFilter) return;
         const latest = getLatestAvailableDate();
         if (!latest) return;
+
+        // Mặc định xem tuần hiện tại theo dữ liệu mới nhất: thứ 2 -> ngày mới nhất trong tuần.
         const start = new Date(latest);
-        start.setDate(start.getDate() - 6);
+        const day = start.getDay(); // 0 = Chủ nhật, 1 = Thứ 2, ...
+        const daysFromMonday = day === 0 ? 6 : day - 1;
+        start.setDate(start.getDate() - daysFromMonday);
+
         dom.filterStartDate.value = formatDate(start);
         dom.filterEndDate.value = formatDate(latest);
       }
