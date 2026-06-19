@@ -1039,7 +1039,7 @@
         <div id="paidSourceSummary" class="paid-source-summary"></div>
         <div id="paidCustomerList" class="paid-customer-list"></div>
         <div id="paidTrackingActions" class="paid-tracking-actions">
-          <button id="paidTrackingToggle" class="paid-toggle-btn" type="button">Xem thêm</button>
+          <button id="paidTrackingToggle" class="paid-toggle-btn" type="button" onclick="event.preventDefault(); event.stopImmediatePropagation(); window.togglePaidTrackingList && window.togglePaidTrackingList(); return false;">Xem thêm</button>
         </div>
       </div>
 
@@ -2950,14 +2950,20 @@
         paidTrackingExpanded = false;
         renderAll();
       }));
+      function togglePaidTrackingList() {
+        paidTrackingExpanded = !paidTrackingExpanded;
+        renderPaidTracking();
+        requestAnimationFrame(() => {
+          const target = paidTrackingExpanded ? dom.paidCustomerList : dom.paidTrackingToggle;
+          target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+
+      window.togglePaidTrackingList = togglePaidTrackingList;
       if (dom.paidTrackingToggle) {
-        dom.paidTrackingToggle.addEventListener("click", () => {
-          paidTrackingExpanded = !paidTrackingExpanded;
-          renderPaidTracking();
-          requestAnimationFrame(() => {
-            const target = paidTrackingExpanded ? dom.paidCustomerList : dom.paidTrackingToggle;
-            target?.scrollIntoView({ behavior: "smooth", block: "start" });
-          });
+        dom.paidTrackingToggle.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          togglePaidTrackingList();
         });
       }
       dom.trendToggles.forEach((el) => el.addEventListener("change", () => renderConversionTrendChart(getFilteredCustomers())));
