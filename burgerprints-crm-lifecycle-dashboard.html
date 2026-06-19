@@ -2954,6 +2954,10 @@
         dom.paidTrackingToggle.addEventListener("click", () => {
           paidTrackingExpanded = !paidTrackingExpanded;
           renderPaidTracking();
+          requestAnimationFrame(() => {
+            const target = paidTrackingExpanded ? dom.paidCustomerList : dom.paidTrackingToggle;
+            target?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
         });
       }
       dom.trendToggles.forEach((el) => el.addEventListener("change", () => renderConversionTrendChart(getFilteredCustomers())));
